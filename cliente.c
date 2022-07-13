@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "Packet.h"
 #include "ConexaoRawSocket.h"
 
 int main()
@@ -8,4 +9,9 @@ int main()
     char *device = "lo";
     int sock = ConexaoRawSocket("lo");
     printf("sock out: %d\n", sock);
+
+    for(int i = 0; i < 10; i++)
+    {
+
+    }
 }

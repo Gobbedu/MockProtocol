@@ -37,7 +37,7 @@ int total_len=0,send_len;
 void get_eth_index()
 {
 	memset(&ifreq_i,0,sizeof(ifreq_i));
-	strncpy(ifreq_i.ifr_name,"eth0",IFNAMSIZ-1);
+	strncpy(ifreq_i.ifr_name,"lo",IFNAMSIZ-1);
 
 	if((ioctl(sock_raw,SIOCGIFINDEX,&ifreq_i))<0)
 		printf("error in index ioctl reading");
@@ -49,7 +49,7 @@ void get_eth_index()
 void get_mac()
 {
 	memset(&ifreq_c,0,sizeof(ifreq_c));
-	strncpy(ifreq_c.ifr_name,"eth0",IFNAMSIZ-1);
+	strncpy(ifreq_c.ifr_name,"lo",IFNAMSIZ-1);
 
 	if((ioctl(sock_raw,SIOCGIFHWADDR,&ifreq_c))<0)
 		printf("error in SIOCGIFHWADDR ioctl reading");
@@ -130,7 +130,7 @@ unsigned short checksum(unsigned short* buff, int _16bitword)
 void get_ip()
 {
 	memset(&ifreq_ip,0,sizeof(ifreq_ip));
-	strncpy(ifreq_ip.ifr_name,"eth0",IFNAMSIZ-1);
+	strncpy(ifreq_ip.ifr_name,"lo",IFNAMSIZ-1);
   	 if(ioctl(sock_raw,SIOCGIFADDR,&ifreq_ip)<0)
  	 {
 		printf("error in SIOCGIFADDR \n");
@@ -190,7 +190,7 @@ int main()
 	sadr_ll.sll_addr[5]  = DESTMAC5;
 
 	printf("sending...\n");
-	for(int i = 0; i < 10000; ++i)
+	for(int i = 0; i < 10; ++i)
 	{
 	send_len = sendto(sock_raw,sendbuff,64,0,(const struct sockaddr*)&sadr_ll,sizeof(struct sockaddr_ll));
 		if(send_len<0)
