@@ -58,20 +58,20 @@ void ip_header(unsigned char* buffer,int buflen)
 	fprintf(log_txt , "\t|-Destination IP    : %s\n",inet_ntoa(dest.sin_addr));
 }
 
-void payload(unsigned char* buffer,int buflen)
+void payload(FILE *saida, unsigned char* buffer,int buflen)
 {
 	int i=0;
 	unsigned char * data = (buffer + iphdrlen  + sizeof(struct ethhdr) + sizeof(struct udphdr));
-	fprintf(log_txt,"\nData\n");
+	fprintf(saida,"\nData\n");
 	int remaining_data = buflen - (iphdrlen  + sizeof(struct ethhdr) + sizeof(struct udphdr));
 	for(i=0;i<remaining_data;i++)
 	{
 		if(i!=0 && i%16==0)
-			fprintf(log_txt,"\n");
-		fprintf(log_txt," %.2X ",data[i]);
+			fprintf(saida,"\n");
+		fprintf(saida," %.2X ",data[i]);
 	}
 
-	fprintf(log_txt,"\n");
+	fprintf(saida,"\n");
 
 
 
@@ -101,7 +101,7 @@ void tcp_header(unsigned char* buffer,int buflen)
 	fprintf(log_txt , "\t|-Checksum             : %d\n",ntohs(tcp->check));
 	fprintf(log_txt , "\t|-Urgent Pointer       : %d\n",tcp->urg_ptr);
 
-	payload(buffer,buflen);
+	payload(log_txt, buffer,buflen);
 
 fprintf(log_txt,"*****************************************************************\n\n\n");
 }
@@ -119,7 +119,7 @@ void udp_header(unsigned char* buffer, int buflen)
 	fprintf(log_txt , "\t|-UDP Length      	: %d\n" , ntohs(udp->len));
 	fprintf(log_txt , "\t|-UDP Checksum   	: %d\n" , ntohs(udp->check));
 
-	payload(buffer,buflen);
+	payload(log_txt, buffer,buflen);
 
 	fprintf(log_txt,"*****************************************************************\n\n\n");
 
@@ -194,6 +194,7 @@ int main()
 		}
 		fflush(log_txt);
 		data_process(buffer,buflen);
+		payload(stdout, buffer, buflen);
 
 	}
 

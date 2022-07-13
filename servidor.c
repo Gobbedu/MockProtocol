@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "ConexaoRawSocket.h"
 
+/* sniff */
 int main()
 {
     // char device[3] = {'l', 'o', '\0'};

@@ -11,12 +11,12 @@ ConexaoRawSocket.o: ConexaoRawSocket.c
 	@gcc -c ConexaoRawSocket.c
 
 
-tut: sniff-tut dest-tut
+tut: recv-tut send-tut
 
-sniff-tut:
+recv-tut:
 	@gcc packet_sniff_raw_subodh.c -o sniff-tut
 
-dest-tut:
+send-tut:
 	@gcc send_packet_raw_subodh.c -o dest-tut
 
 

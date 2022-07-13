@@ -23,21 +23,21 @@ struct ifreq ifreq_c,ifreq_i,ifreq_ip; /// for each ioctl keep diffrent ifreq st
 int sock_raw;
 unsigned char *sendbuff;
  
- #define DESTMAC0	0xd0
- #define DESTMAC1	0x67
- #define DESTMAC2	0xe5
- #define DESTMAC3	0x12
- #define DESTMAC4	0x6f
- #define DESTMAC5	0x8f
+ #define DESTMAC0	0xa8
+ #define DESTMAC1	0x1e
+ #define DESTMAC2	0x84
+ #define DESTMAC3	0xd3
+ #define DESTMAC4	0xc1
+ #define DESTMAC5	0x2b
  
- #define destination_ip 10.240.253.10
+ #define destination_ip "200.236.31.126"
 
 int total_len=0,send_len;
 
 void get_eth_index()
 {
 	memset(&ifreq_i,0,sizeof(ifreq_i));
-	strncpy(ifreq_i.ifr_name,"wlan0",IFNAMSIZ-1);
+	strncpy(ifreq_i.ifr_name,"eth0",IFNAMSIZ-1);
 
 	if((ioctl(sock_raw,SIOCGIFINDEX,&ifreq_i))<0)
 		printf("error in index ioctl reading");
@@ -49,7 +49,7 @@ void get_eth_index()
 void get_mac()
 {
 	memset(&ifreq_c,0,sizeof(ifreq_c));
-	strncpy(ifreq_c.ifr_name,"wlan0",IFNAMSIZ-1);
+	strncpy(ifreq_c.ifr_name,"eth0",IFNAMSIZ-1);
 
 	if((ioctl(sock_raw,SIOCGIFHWADDR,&ifreq_c))<0)
 		printf("error in SIOCGIFHWADDR ioctl reading");
@@ -90,6 +90,8 @@ void get_data()
 	sendbuff[total_len++]	=	0xCC;
 	sendbuff[total_len++]	=	0xDD;
 	sendbuff[total_len++]	=	0xEE;
+	sendbuff[total_len++]	= 	0xAE;
+	sendbuff[total_len++]	= 	0xFF;
 
 }
 
@@ -128,7 +130,7 @@ unsigned short checksum(unsigned short* buff, int _16bitword)
 void get_ip()
 {
 	memset(&ifreq_ip,0,sizeof(ifreq_ip));
-	strncpy(ifreq_ip.ifr_name,"wlan0",IFNAMSIZ-1);
+	strncpy(ifreq_ip.ifr_name,"eth0",IFNAMSIZ-1);
   	 if(ioctl(sock_raw,SIOCGIFADDR,&ifreq_ip)<0)
  	 {
 		printf("error in SIOCGIFADDR \n");
@@ -149,7 +151,7 @@ void get_ip()
 	iph->ttl	= 64;
 	iph->protocol	= 17;
 	iph->saddr	= inet_addr(inet_ntoa((((struct sockaddr_in *)&(ifreq_ip.ifr_addr))->sin_addr)));
-	iph->daddr	= inet_addr("destination_ip"); // put destination IP address
+	iph->daddr	= inet_addr(destination_ip); // put destination IP address
 	total_len += sizeof(struct iphdr); 
 	get_udp();
 
@@ -188,7 +190,7 @@ int main()
 	sadr_ll.sll_addr[5]  = DESTMAC5;
 
 	printf("sending...\n");
-	while(1)
+	for(int i = 0; i < 10000; ++i)
 	{
 	send_len = sendto(sock_raw,sendbuff,64,0,(const struct sockaddr*)&sadr_ll,sizeof(struct sockaddr_ll));
 		if(send_len<0)
