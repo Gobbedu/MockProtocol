@@ -1,15 +1,25 @@
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
 
-/* sniff */
+/* sniff sniff */
 int main()
 {
-    // char device[3] = {'l', 'o', '\0'};
-    // char *device = "lo\0";
-    char *device = "lo";
     int sock = ConexaoRawSocket("lo");
-    printf("sock out: %d\n", sock);
+    char buffer[512];                   // pega 512 com sizeof(), pega 1 com strlen()
+    int bytes;
+
+    while(1){
+        bytes = recv(sock, buffer, sizeof(buffer), 0);      // recebe dados do socket
+        buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
+        printf("recebi %d bytes: '%s'\n",bytes, buffer);    // print dados recebidos
+    }
+
+    close(sock);
+    printf("servidor terminado\n");
 }
 
 // recvfrom .... pacote

@@ -3,6 +3,9 @@
 #ifndef __PACKET__
 #define __PACKET__
 
+#include <string.h>
+#include <unistd.h>
+
 enum TIPOS {
     OK = 1,
     NACK = 2,

@@ -3,16 +3,11 @@
 #include <sys/ioctl.h>
 #include <net/ethernet.h>
 #include <linux/if_packet.h>
+#include <arpa/inet.h>
 #include <linux/if.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-// #include <net/if.h>
-#include <arpa/inet.h>
-#include<linux/if_packet.h>
-#include<netinet/in.h>		 
-#include<netinet/if_ether.h>    // for ethernet header
 
 #include "ConexaoRawSocket.h"
 
