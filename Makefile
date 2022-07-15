@@ -3,11 +3,17 @@
 
 all: cliente servidor
 
-cliente: ConexaoRawSocket.o Packet.o
-	@gcc ConexaoRawSocket.o Packet.o cliente.c -o cliente
+cliente: ConexaoRawSocket.o Packet.o cliente.o
+	@gcc ConexaoRawSocket.o Packet.o cliente.o -o cliente
 
-servidor: ConexaoRawSocket.o Packet.o
-	@gcc  ConexaoRawSocket.o Packet.o servidor.c -o servidor
+servidor: ConexaoRawSocket.o Packet.o servidor.o
+	@gcc  ConexaoRawSocket.o Packet.o servidor.o -o servidor
+
+servidor.o: servidor.c
+	@gcc -c servidor.c
+
+cliente.o: cliente.c
+	@gcc -c cliente.c
 
 ConexaoRawSocket.o: ConexaoRawSocket.c
 	@gcc -c ConexaoRawSocket.c
@@ -27,5 +33,5 @@ send-tut:
 
 
 clean:
-	@rm -f cliente servidor ConexaoRawSocket.o Packet.o
+	@rm -f cliente servidor ConexaoRawSocket.o Packet.o servidor.o cliente.o
 	@rm -f dest-tut sniff-tut 

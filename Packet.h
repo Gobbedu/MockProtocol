@@ -31,6 +31,14 @@ unsigned char   dir_nn_E        = 'A',
 
 unsigned char MARCADOR_INICIO = 126;
 
+
+typedef struct {
+    unsigned int tamanho : 6;
+    unsigned int sequencia : 4;
+    unsigned int tipo : 6;
+} envelope_packet;
+
+
 typedef struct our_packet{
 
     char MI;    /* 0111.1110 -> ASCII -> '~' = 126 */
@@ -45,5 +53,6 @@ typedef struct our_packet{
 
 
 void enquadramento(void);
+unsigned char *build_generic_packet(unsigned char *data); // unsigned usa todos os bits do byte (precisa)
 
 #endif

@@ -7,12 +7,14 @@
 
 int main()
 {
-    char *buffer = "mamamia o buffer tem q ser >= a 14 bytes pra passar :)";
-    int sock = ConexaoRawSocket("enp2s0f1");                  // abre o socket
+    int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
+    unsigned char *data = "mamamia o buffer tem q ser >= a 14 bytes pra passar :)";
     int bytes;
 
-    // len of buffer must be strlen(), sizeof doesnt work
-    bytes = send(sock, buffer, strlen(buffer) + 1, 0);  // envia buffer para o socket
+    unsigned char *packet = build_generic_packet(data);
+
+    // len of packet must be strlen(), sizeof doesnt work
+    bytes = send(sock, packet, strlen(packet) + 1, 0);  // envia packet para o socket
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));
 
