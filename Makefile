@@ -1,4 +1,6 @@
 
+.PHONY: cliente servidor clean		# sempre vai estar desatualizado (make roda dnv)
+
 all: cliente servidor
 
 cliente: ConexaoRawSocket.o Packet.o

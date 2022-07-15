@@ -8,7 +8,7 @@
 /* sniff sniff */
 int main()
 {
-    int sock = ConexaoRawSocket("lo");
+    int sock = ConexaoRawSocket("enp2s0f1");
     char buffer[512];                   // pega 512 com sizeof(), pega 1 com strlen()
     int bytes;
 

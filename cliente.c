@@ -8,9 +8,10 @@
 int main()
 {
     char *buffer = "mamamia o buffer tem q ser >= a 14 bytes pra passar :)";
-    int sock = ConexaoRawSocket("lo");                  // abre o socket
+    int sock = ConexaoRawSocket("enp2s0f1");                  // abre o socket
     int bytes;
 
+    // len of buffer must be strlen(), sizeof doesnt work
     bytes = send(sock, buffer, strlen(buffer) + 1, 0);  // envia buffer para o socket
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));
