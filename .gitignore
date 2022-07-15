@@ -1,2 +1,10 @@
 log.txt
 teste.c
+.vscode/settings.json
+cliente
+ConexaoRawSocket.o
+Packet.o
+servidor
+.vscode/configurationCache.log
+.vscode/dryrun.log
+.vscode/targets.log

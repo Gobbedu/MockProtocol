@@ -27,5 +27,8 @@ send-tut:
 
 
 clean:
-	@rm -f cliente servidor ConexaoRawSocket.o Packet.o
+	@rm -f  ConexaoRawSocket.o Packet.o
 	@rm -f dest-tut sniff-tut 
+
+purge: clean
+	@rm -f cliente servidor
