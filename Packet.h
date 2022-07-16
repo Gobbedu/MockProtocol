@@ -1,10 +1,5 @@
-/* sla */
-
-#ifndef __PACKET__
-#define __PACKET__
-
-#include <string.h>
-#include <unistd.h>
+#ifndef _PACKET_H
+#define _PACKET_H
 
 enum TIPOS {
     OK = 1,
@@ -23,13 +18,13 @@ enum TIPOS {
     };
 
 // respostas de erro no servidor
-unsigned char   dir_nn_E        = 'A', 
-                sem_permissao   = 'B', 
-                dir_ja_E        = 'C', 
-                arq_nn_E        = 'D', 
-                sem_espaco      = 'E';
+unsigned char   dir_nn_E, 
+                sem_permissao, 
+                dir_ja_E, 
+                arq_nn_E, 
+                sem_espaco;
 
-unsigned char MARCADOR_INICIO = 126;
+unsigned char MARCADOR_INICIO;
 
 
 typedef struct {
@@ -51,7 +46,7 @@ typedef struct our_packet{
 
 } our_packet;
 
-
+void inicialize_variaveis();
 void enquadramento(void);
 unsigned char *build_generic_packet(unsigned char *data); // unsigned usa todos os bits do byte (precisa)
 

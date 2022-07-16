@@ -1,6 +1,14 @@
-#include <stdio.h>
 #include <string.h>
 #include "Packet.h"
+
+void inicialize_variaveis(){
+    dir_nn_E        = 'A';
+    sem_permissao   = 'B'; 
+    dir_ja_E        = 'C'; 
+    arq_nn_E        = 'D'; 
+    sem_espaco      = 'E';
+    MARCADOR_INICIO = 126;
+}
 
 // estrutura do packet
 //  MI 8b | Tamanho 6b | Sequencia 4b | Tipo 6b | Dados 0 - 63 bytes(6b tamanho) | Paridade 8b |||

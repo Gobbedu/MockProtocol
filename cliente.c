@@ -1,12 +1,14 @@
 #include <sys/socket.h>
-// #include <sys/types.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
 
 int main()
 {
+    inicialize_variaveis();
     int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     unsigned char *data = "mamamia o buffer tem q ser >= a 14 bytes pra passar :)";
     int bytes;
