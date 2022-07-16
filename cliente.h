@@ -3,9 +3,9 @@
 
 #include <sys/socket.h>
 #include <string.h>
-// #include <sys/types.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <errno.h>
-
+#include <unistd.h>
 
 #endif

@@ -6,7 +6,6 @@
 /* sniff sniff */
 int main()
 {
-    inicialize_variaveis();
     // abre o socket -> lo vira ifconfig to pc que recebe
     int sock = ConexaoRawSocket("lo");
     char buffer[512];                   // pega 512 com sizeof(), pega 1 com strlen()

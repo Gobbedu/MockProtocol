@@ -4,7 +4,6 @@
 
 int main()
 {
-    inicialize_variaveis();
     int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     char *data = "mamamia o buffer tem q ser >= a 14 bytes pra passar :)";
     int bytes;
