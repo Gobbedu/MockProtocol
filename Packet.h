@@ -54,7 +54,6 @@ typedef struct our_packet{
 
 } our_packet;
 
-
 unsigned char *build_generic_packet(unsigned char *data); // unsigned usa todos os bits do byte (precisa)
 void enquadramento(void);
 

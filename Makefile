@@ -17,21 +17,14 @@ clean:
 
 purge: clean
 	@rm -f servidor cliente
-
+	@rm -f recv-tut send-tut
 
 # # =======================tutorial=======================
 
-# tut: recv-tut send-tut
+tut: recv-tut send-tut
 
-# recv-tut:
-# 	@gcc packet_sniff_raw_subodh.c -o sniff-tut
+recv-tut:
+	@gcc packet_sniff_raw_subodh.c -o recv-tut
 
-# send-tut:
-# 	@gcc send_packet_raw_subodh.c -o dest-tut
-
-
-# clean:
-# 	@rm -f dest-tut sniff-tut 
-
-# purge: clean
-# 	@rm -f cliente servidor
+send-tut:
+	@gcc send_packet_raw_subodh.c -o send-tut
