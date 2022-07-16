@@ -1,9 +1,7 @@
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <stdio.h>
+#include "servidor.h"
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
+
 
 /* sniff sniff */
 int main()

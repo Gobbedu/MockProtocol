@@ -1,10 +1,10 @@
-/* sla */
-
-#ifndef __PACKET__
-#define __PACKET__
+#ifndef PACKET_H
+#define PACKET_H
 
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 enum TIPOS {
     OK = 1,
@@ -22,21 +22,24 @@ enum TIPOS {
     SHOW_NA_TELA = 63,
     };
 
+// variaveis globais definidas no .c, mas declaradas no .h
 // respostas de erro no servidor
-unsigned char   dir_nn_E        = 'A', 
-                sem_permissao   = 'B', 
-                dir_ja_E        = 'C', 
-                arq_nn_E        = 'D', 
-                sem_espaco      = 'E';
+extern unsigned char   
+                dir_nn_E       , 
+                sem_permissao  , 
+                dir_ja_E       , 
+                arq_nn_E       , 
+                sem_espaco     ,
+                MARCADOR_INICIO; // 126 -> 0111.1110
 
-unsigned char MARCADOR_INICIO = 126;
-
-
-typedef struct {
+struct envelope_packet {
+    unsigned char MI;
     unsigned int tamanho : 6;
     unsigned int sequencia : 4;
     unsigned int tipo : 6;
-} envelope_packet;
+}__attribute__((packed));   // remove padding 
+
+typedef struct envelope_packet envelope_packet;
 
 
 typedef struct our_packet{
@@ -52,7 +55,7 @@ typedef struct our_packet{
 } our_packet;
 
 
-void enquadramento(void);
 unsigned char *build_generic_packet(unsigned char *data); // unsigned usa todos os bits do byte (precisa)
+void enquadramento(void);
 
 #endif

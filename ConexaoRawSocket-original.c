@@ -1,4 +1,13 @@
-#include "ConexaoRawSocket.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/ethernet.h>
+#include <linux/if_packet.h>
+#include <linux/if.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 
 int ConexaoRawSocket(char *device)
 {
@@ -9,14 +18,14 @@ int ConexaoRawSocket(char *device)
 
   soquete = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));  	/*cria socket*/
   if (soquete == -1) {
-    printf("Erro no Socket: %s\n", strerror(errno));
+    printf("Erro no Socket\n");
     exit(-1);
   }
 
   memset(&ir, 0, sizeof(struct ifreq));  	/*dispositivo eth0*/
   memcpy(ir.ifr_name, device, sizeof(device));
   if (ioctl(soquete, SIOCGIFINDEX, &ir) == -1) {
-    printf("Erro no ioctl: %s\n", strerror(errno));
+    printf("Erro no ioctl\n");
     exit(-1);
   }
 	
