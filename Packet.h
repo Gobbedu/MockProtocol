@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// VAR GLOBAL //
+
+#define LIMITE_DADOS    63
+#define LIMITE_SEQ      15
+
 enum TIPOS {
     OK = 1,
     NACK = 2,
@@ -23,7 +28,7 @@ enum TIPOS {
     };
 
 // variaveis globais definidas no .c, mas declaradas no .h
-// respostas de erro no servidor
+// respostas de erro no servidor & constantes
 extern unsigned char   
                 dir_nn_E       , 
                 sem_permissao  , 
@@ -54,7 +59,28 @@ typedef struct our_packet{
 
 } our_packet;
 
+// PROTOTIPOS //
+
+/* ================ packet something ================ */
+unsigned char* make_packet(int sequencia, int tipo, char* dados);
 unsigned char *build_generic_packet(unsigned char *data); // unsigned usa todos os bits do byte (precisa)
-void enquadramento(void);
+
+
+/* ================ packet getters ================ */
+char get_packet_MI(unsigned char* buffer);
+int get_packet_tamanho(unsigned char* buffer);
+int get_packet_sequence(unsigned char* buffer);
+int get_packet_type(unsigned char* buffer);
+char* get_packet_data(unsigned char* buffer);
+int get_packet_parity(unsigned char* buffer);
+int get_packet_len(unsigned char* buffer);
+char *get_type_packet(unsigned char* buffer);
+
+
+/* ================ funcoes auxiliares ================ */
+void read_packet(unsigned char *buffer);
+int is_our_packet(unsigned char *buffer);
+int is_valid_type(int tipo);
+
 
 #endif

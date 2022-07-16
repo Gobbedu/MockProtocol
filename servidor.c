@@ -2,31 +2,31 @@
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
 
+// global para servidor
+int last_packet_sequence = 0;
 
 /* sniff sniff */
 int main()
 {
     // abre o socket -> lo vira ifconfig to pc que recebe
     int sock = ConexaoRawSocket("lo");
-    char buffer[512];                   // pega 512 com sizeof(), pega 1 com strlen()
+    unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
     int bytes;
 
     while(1){
         bytes = recv(sock, buffer, sizeof(buffer), 0);      // recebe dados do socket
-        buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
-        printf("recebi %d bytes: '%s'\n",bytes, buffer);    // print dados recebidos
+        // buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
+
+        if(bytes>0 && is_our_packet(buffer))
+        {   // processa pacote se eh nosso pacote
+            read_packet(buffer);
+        }
     }
 
     close(sock);
     printf("servidor terminado\n");
 }
 
-// recvfrom .... pacote
-// .
-// .    (acho MI) (le tamanho)
-// .    
-// .
-// quebra pacote -> MI | tamanho | Tipo | Dados | Paridade 
 // check_paridade_vertical sobre o campo Dados -> NACK ou type_process
 
 void type_process(unsigned char* buffer,int buflen)
@@ -77,7 +77,6 @@ void type_process(unsigned char* buffer,int buflen)
 
 		default:
 			break;
-
 	}
 }
 
