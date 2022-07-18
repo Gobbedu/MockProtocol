@@ -63,8 +63,7 @@ typedef struct our_packet{
 
 /* ================ packet something ================ */
 unsigned char* make_packet(int sequencia, int tipo, char* dados);
-unsigned char *build_generic_packet(unsigned char *data); // unsigned usa todos os bits do byte (precisa)
-
+int free_packet(unsigned char* packet);
 
 /* ================ packet getters ================ */
 char get_packet_MI(unsigned char* buffer);

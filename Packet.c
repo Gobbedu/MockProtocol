@@ -21,46 +21,6 @@ unsigned char   dir_nn_E        = 'A',
 // deteccao de erros (Junto a recv e send das mensagens XOR byte a byte)
 // controle de fluxo
 
-
-// por enquanto sequencia eh sempre zero
-unsigned char *build_generic_packet(unsigned char *data)
-{   // unsigned usa todos os bits do byte(precisa), sem sinal no byte 
-    int len_header = sizeof(envelope_packet);
-    unsigned int bytes_data = strlen((char *)data);         // nao precisa contar ate \0
-    int len_packet = (len_header + bytes_data + 1);         // 3 + dados + 1 -> 3 pro header e 1 pra paridade 
-    unsigned char *packet = malloc(len_packet);             // aloca mem pro pacote
-    memset(packet, 0, len_packet);                          // limpa lixo na memoria alocada
-
-    envelope_packet header_t;
-    header_t.MI = MARCADOR_INICIO;      // 0111.1110 -> Marcador de Inicio
-    header_t.tamanho = bytes_data;
-    header_t.sequencia = 0;
-    header_t.tipo = DADOS;
-
-    // cria ponteiro de header e faz cast para ponteiro pra char
-    envelope_packet *header_p = &header_t;
-    unsigned char *header = (unsigned char*) header_p;
-
-    packet[0] = header[0];      // salva MI em pacote[0] (8bits | 1byte)
-    packet[1] = header[1];      // Tamanho + sequencia + tipo   = 2 bytes
-    packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
-
-    // copia dados na sessao dados, excluindo o \0 de 'data'
-    packet[len_header+bytes_data] = data[0];            // init paridade do primeiro byte
-    packet[len_header] = data[0];                       // init copia de dados
-    for(int i = 1; i < bytes_data; i++){                // nao inclui ultimo byte \0, reescreve paridade
-        packet[len_header+i] = data[i];                 // salva 'data' no pacote 
-        packet[len_header+bytes_data] ^= data[i];       // paridade vertical para deteccao de erros (XOR)
-    }
-
-
-    printf("PARIDADE ORIGINAL == %d\n", packet[len_header + bytes_data]);
-
-    // packet[len_header+bytes_data+1] = '\0';         // indica final do pacote para strlen()
-    return packet;
-}
-
-
 /* ============================== PACKET FUNCTIONS ============================== */
 
 // cria e seta pacote inteiro do zero, retorna nullo se houve ERRO
@@ -117,6 +77,15 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
     return packet;
 }
 
+int free_packet(unsigned char* packet)
+{   
+    if(!packet) // if packet nn existe (NULL)
+        return 0;
+
+    free(packet);
+    return 1;
+}
+
 
 /* =========================== FUNCOES AUXILIARES =========================== */
 
@@ -135,7 +104,6 @@ void read_packet(unsigned char *buffer)
     return;
 }
 
-
 int is_our_packet(unsigned char *buffer)
 {   // retorna 1 se sim, 0 caso contrario
     envelope_packet *header = (envelope_packet*) buffer;
@@ -143,6 +111,8 @@ int is_our_packet(unsigned char *buffer)
 }
 
 int is_valid_type(int tipo){
+    if( tipo > 63)  // tipo maior que 6 bits
+        return 0;
     switch (tipo)    //see /etc/protocols file 
 	{
         case OK:
