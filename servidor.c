@@ -29,7 +29,7 @@ int main()
 
 // check_paridade_vertical sobre o campo Dados -> NACK ou type_process
 
-void type_process(unsigned char* buffer,int buflen)
+void type_process_server(unsigned char* buffer,int buflen)
 {
 	struct our_packet *pacote = (struct our_packet*)(buffer + sizeof (struct our_packet));
 	/* we will se UDP Protocol only*/ 
