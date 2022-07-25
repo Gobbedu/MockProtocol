@@ -11,6 +11,7 @@ int main(){
         fscanf(stdin, "%s", comando);
         fscanf(stdin, "%s", parametro);
 
+
         type_process_client(comando, parametro);
     }
     return 0;
@@ -22,13 +23,17 @@ int main(){
 void type_process_client(char* comando, char* parametro){
     int tam = strlen(comando) + strlen(parametro);
     char final[tam];
+    char *aux = (char*)calloc(1, 64-sizeof(parametro));
+    strcat(parametro, aux);
 
+    // final c = client, final s = servidor
 	if(strcmp(comando, "lsc") == 0){
         strcat(strcpy(final, "ls "), parametro);
         system(final);
     }
     else if(strcmp(comando, "cdc") == 0){
         strcat(strcpy(final, "cd "), parametro);
+        printf("cd: %s\n", final);
         system(final);
     }
     else if(strcmp(comando, "mkdirc") == 0){
@@ -36,24 +41,24 @@ void type_process_client(char* comando, char* parametro){
         system(final);
     }
     else if(strcmp(comando, "lss") == 0){
-        strcat(strcpy(final, "ls "), parametro);
-        gera_pedido(final);
+        strcat(parametro, aux);
+        gera_pedido(parametro, 7);
     }
     else if(strcmp(comando, "cds") == 0){
-        strcat(strcpy(final, "cd "), parametro);
-        gera_pedido(final);
+        strcat(parametro, aux);
+        gera_pedido(parametro, 6);
     }
     else if(strcmp(comando, "mkdirs") == 0){
-        strcat(strcpy(final, "mkdir "), parametro);
-        gera_pedido(final);
+        strcat(parametro, aux);
+        gera_pedido(parametro, 8);
     }
 }
 
-void gera_pedido(char * dados){
+void gera_pedido(char * dados, int tipo){
     int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     int bytes;
 
-    unsigned char* packet = make_packet(0, DADOS, dados);
+    unsigned char* packet = make_packet(0, tipo, dados);
     if(!packet) // se pacote deu errado
         return;
 
