@@ -55,6 +55,7 @@ typedef struct our_packet{
     unsigned int tipo : 6;
     /* TODO - data (0-63 bytes) */
     void *data;
+    char *complemento;
     char paridade;
 
 } our_packet;
@@ -62,7 +63,7 @@ typedef struct our_packet{
 // PROTOTIPOS //
 
 /* ================ packet something ================ */
-unsigned char* make_packet(int sequencia, int tipo, char* dados);
+unsigned char* make_packet(int sequencia, int tipo, char* dados, char* complemento);
 int free_packet(unsigned char* packet);
 
 /* ================ packet getters ================ */

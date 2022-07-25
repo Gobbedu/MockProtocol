@@ -24,8 +24,9 @@ unsigned char   dir_nn_E        = 'A',
 /* ============================== PACKET FUNCTIONS ============================== */
 
 // cria e seta pacote inteiro do zero, retorna nullo se houve ERRO
-unsigned char* make_packet(int sequencia, int tipo, char* dados)
+unsigned char* make_packet(int sequencia, int tipo, char* dados, char * complemento)
 {
+    int len_complemento = strlen(complemento);   
     // VALIDA //
     int len_dados = strlen(dados);     // nao precisa contar o \0
     if(len_dados > LIMITE_DADOS){
@@ -70,8 +71,16 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
     packet[len_header] = dados[0];                      // init copia de dados
     for(int i = 1; i < len_dados; i++){                 // nao inclui ultimo byte \0, reescreve paridade
         packet[len_header+i] = dados[i];                // salva 'data' no pacote 
-        packet[len_header+len_dados] ^= dados[i];       // paridade vertical para deteccao de erros (XOR)
+        
+        packet[len_header+len_dados+len_complemento] ^= dados[i];       // paridade vertical para deteccao de erros (XOR)
     }
+    for (int i = 1; i <= len_complemento; i++){
+        packet[len_header+len_dados+i] = complemento[i-1];
+    }
+    for(int i = 1; i < len_dados; i++){ 
+        packet[len_header+len_dados+len_complemento] ^= dados[i];       // paridade vertical para deteccao de erros (XOR)
+    }
+    
 
     //final de string sempre tem \0, indica final do pacote para strlen()
     return packet;
