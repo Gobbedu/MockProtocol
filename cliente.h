@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <unistd.h>
 
-void type_process_client(unsigned char* buffer,int buflen);
+void type_process_client(char* comando, char* parametro);
+
+void gera_pedido(char * dados);
 
 #endif

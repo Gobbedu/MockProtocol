@@ -2,82 +2,70 @@
 #include "cliente.h"
 #include "Packet.h"
 
-int main()
-{
+int main(){
+    char * comando = (char *) calloc(1, sizeof(char));
+    char * parametro = (char *) calloc(1, sizeof(char));
+    while(1){
+        memset(parametro, '\0', sizeof(char));
+
+        fscanf(stdin, "%s", comando);
+        fscanf(stdin, "%s", parametro);
+
+        type_process_client(comando, parametro);
+    }
+    return 0;
+
+    free(comando);
+    free(parametro);
+}
+
+void type_process_client(char* comando, char* parametro){
+    int tam = strlen(comando) + strlen(parametro);
+    char final[tam];
+
+	if(strcmp(comando, "lsc") == 0){
+        strcat(strcpy(final, "ls "), parametro);
+        system(final);
+    }
+    else if(strcmp(comando, "cdc") == 0){
+        strcat(strcpy(final, "cd "), parametro);
+        system(final);
+    }
+    else if(strcmp(comando, "mkdirc") == 0){
+        strcat(strcpy(final, "mkdir "), parametro);
+        system(final);
+    }
+    else if(strcmp(comando, "lss") == 0){
+        strcat(strcpy(final, "ls "), parametro);
+        gera_pedido(final);
+    }
+    else if(strcmp(comando, "cds") == 0){
+        strcat(strcpy(final, "cd "), parametro);
+        gera_pedido(final);
+    }
+    else if(strcmp(comando, "mkdirs") == 0){
+        strcat(strcpy(final, "mkdir "), parametro);
+        gera_pedido(final);
+    }
+}
+
+void gera_pedido(char * dados){
     int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     int bytes;
 
-    char * entrada = (char *) calloc(1, sizeof(char));
+    unsigned char* packet = make_packet(0, DADOS, dados);
+    if(!packet) // se pacote deu errado
+        return;
 
-    while(1){
-        fscanf(stdin, "%s", entrada);
-        unsigned char* packet = make_packet(0, DADOS, entrada);
-        if(!packet) // se pacote deu errado
-            return 0;
+    // len of packet must be strlen(), sizeof doesnt work
+    bytes = send(sock, packet, strlen((char *)packet), 0);          // envia packet para o socket
+    if(bytes<0)                                                     // pega erros, se algum
+        printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
-        // len of packet must be strlen(), sizeof doesnt work
-        bytes = send(sock, packet, strlen((char *)packet), 0);          // envia packet para o socket
-        if(bytes<0)                                                     // pega erros, se algum
-            printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+    printf("%d bytes enviados no socket %d\n", bytes, sock);
 
-        printf("%d bytes enviados no socket %d\n", bytes, sock);
+    read_packet(packet);
+    free(packet);
 
-        read_packet(packet);
-        free(packet);
-    }
-
-    free(entrada);
     close(sock);                                        // fecha socket
-    return 0;
-}
-
-void type_process_client(unsigned char* buffer,int buflen)
-{
-	struct our_packet *pacote = (struct our_packet*)(buffer + sizeof (struct our_packet));
-	
-	switch (pacote->tipo)    
-	{
-        case OK:
-            // funcao q redireciona
-            break;
-        case NACK:
-            // funcao q redireciona
-            break;
-        case ACK:
-            // funcao q redireciona
-            break;
-        case CD:
-            // funcao q redireciona
-            break;
-        case LS:
-            // funcao q redireciona
-            break;
-        case MKDIR:
-            // funcao q redireciona
-            break;
-        case GET:
-            // funcao q redireciona
-            break;
-        case PUT:
-            // funcao q redireciona
-            break;
-        case ERRO:
-            // funcao q redireciona
-            break;
-        case DESC_ARQ:
-            // funcao q redireciona
-            break;
-        case DADOS:
-            // funcao q redireciona
-            break;
-        case FIM:
-            // funcao q redireciona
-            break;
-        case SHOW_NA_TELA:
-            // funcao q redireciona
-            break;
-
-		default:
-			break;
-	}
 }
