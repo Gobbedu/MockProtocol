@@ -20,7 +20,6 @@ int main(){
 }
 
 void type_process_client(char* comando, char* parametro){
-    int tam = strlen(comando) + strlen(parametro);
     char final[64];
 
     // final c = client, final s = servidor
@@ -29,9 +28,7 @@ void type_process_client(char* comando, char* parametro){
         system(final);
     }
     else if(strcmp(comando, "cdc") == 0){
-        strcat(strcpy(final, "cd "), parametro);
-        // cd não funciona
-        system(final);
+        chdir(parametro);
     }
     else if(strcmp(comando, "mkdirc") == 0){
         strcat(strcpy(final, "mkdir "), parametro);
