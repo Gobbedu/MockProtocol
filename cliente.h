@@ -12,4 +12,6 @@ void type_process_client(char* comando, char* parametro);
 
 void gera_pedido(char * dados, int tipo);
 
+void get();
+
 #endif

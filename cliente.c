@@ -51,6 +51,8 @@ void type_process_client(char* comando, char* parametro){
     }
     else if (strcmp(comando, "get") == 0){
         gera_pedido(parametro, 9);
+        // fazendo função para tratar o get
+        // get();
     }
     else if (strcmp(comando, "put") == 0){
         gera_pedido(parametro, 10);
@@ -79,4 +81,30 @@ void gera_pedido(char * dados, int tipo){
     free(packet);
 
     close(sock);                                        // fecha socket
+}
+
+// função para tratar o get
+void get(){
+    int sock = ConexaoRawSocket("lo");
+
+    unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
+    int bytes;
+
+    bytes = recv(sock, buffer, sizeof(buffer), 0);      // recebe dados do socket
+    // buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
+
+    if(bytes>0 && is_our_packet(buffer))
+    {   // processa pacote se eh nosso pacote
+        if(get_packet_data(buffer) == NACK){
+
+        }
+        else if(get_packet_data(buffer) == ERRO){
+
+        }
+        else if(get_packet_data(buffer) == DESC_ARQ){
+
+        }
+    }
+
+    close(sock);
 }
