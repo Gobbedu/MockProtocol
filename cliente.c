@@ -25,14 +25,20 @@ void type_process_client(char* comando, char* parametro){
     // final c = client, final s = servidor
 	if(strcmp(comando, "lsc") == 0){
         strcat(strcpy(final, "ls "), parametro);
-        system(final);
+        int ret = system(final);
+        if(ret == -1)
+            printf("ERRO\n");
     }
     else if(strcmp(comando, "cdc") == 0){
-        chdir(parametro);
+        int ret = chdir(parametro);
+        if(ret == -1)
+            printf("ERRO: %s\n", strerror(errno));
     }
     else if(strcmp(comando, "mkdirc") == 0){
         strcat(strcpy(final, "mkdir "), parametro);
-        system(final);
+        int ret = system(final);
+        if(ret == -1)
+            printf("ERRO\n");
     }
     else if(strcmp(comando, "cds") == 0){
         gera_pedido(parametro, 6);
@@ -52,13 +58,13 @@ void type_process_client(char* comando, char* parametro){
 }
 
 void gera_pedido(char * dados, int tipo){
-    char *aux = (char*)malloc(64-sizeof(dados));
-    memset(aux, '0', sizeof(aux));
+    char *complemento = (char*)malloc(64-sizeof(dados));
+    memset(complemento, '0', sizeof(aux));
 
     int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     int bytes;
 
-    unsigned char* packet = make_packet(0, tipo, dados, aux);
+    unsigned char* packet = make_packet(0, tipo, dados, complemento);
     if(!packet) // se pacote deu errado
         return;
 
