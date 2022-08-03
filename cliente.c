@@ -59,7 +59,7 @@ void type_process_client(char* comando, char* parametro){
 
 void gera_pedido(char * dados, int tipo){
     char *complemento = (char*)malloc(64-sizeof(dados));
-    memset(complemento, '0', sizeof(aux));
+    memset(complemento, '0', sizeof(complemento));
 
     int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     int bytes;
