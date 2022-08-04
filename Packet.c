@@ -53,10 +53,10 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados, char * compleme
 
     // define informacao do header
     envelope_packet header_t;
-    header_t.MI = MARCADOR_INICIO;      // 0111.1110 -> Marcador de Inicio
-    header_t.tamanho = len_dados;   
-    header_t.sequencia = sequencia;
-    header_t.tipo = tipo;
+    header_t.MI         = MARCADOR_INICIO;      // 0111.1110 -> Marcador de Inicio
+    header_t.tamanho    = len_dados;   
+    header_t.sequencia  = sequencia;
+    header_t.tipo       = tipo;
 
     // cria ponteiro de header e faz cast para ponteiro pra char
     envelope_packet *header_p = &header_t;
@@ -116,13 +116,13 @@ void read_packet(unsigned char *buffer)
 int is_our_packet(unsigned char *buffer)
 {   // retorna 1 se sim, 0 caso contrario
     envelope_packet *header = (envelope_packet*) buffer;
-    return header->MI == '~';
+    return header->MI == MARCADOR_INICIO;
 }
 
 int is_valid_type(int tipo){
     if( tipo > 63)  // tipo maior que 6 bits
         return 0;
-    switch (tipo)    //see /etc/protocols file 
+    switch (tipo)  
 	{
         case OK:
         case NACK:

@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-void type_process_client(char* comando, char* parametro);
+void client_switch(char* comando);
 
 void gera_pedido(char * dados, int tipo);
 

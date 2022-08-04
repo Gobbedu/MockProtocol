@@ -2,41 +2,44 @@
 #include "cliente.h"
 #include "Packet.h"
 
+
 int main(){
-    char * comando = (char *) calloc(1, sizeof(char));
-    char * parametro = (char *) calloc(1, sizeof(char));
+    char pwd[PATH_MAX];
+    char comando[COMMAND_BUFF];
     while(1){
-        memset(parametro, '\0', sizeof(char));
+        if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
+            printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
 
-        fscanf(stdin, "%s", comando);
-        fscanf(stdin, "%s", parametro);
-
-        type_process_client(comando, parametro);
-    }
+        fgets(comando, COMMAND_BUFF, stdin);
+        client_switch(comando);
+    } 
     return 0;
-
-    free(comando);
-    free(parametro);
 }
 
-void type_process_client(char* comando, char* parametro){
-    char final[64];
 
-    // final c = client, final s = servidor
-	if(strcmp(comando, "lsc") == 0){
-        strcat(strcpy(final, "ls "), parametro);
-        int ret = system(final);
+void client_switch(char* comando){
+    // final do comando c : client
+    // final do comando s : server
+    int ret;
+    char *parametro = comando;      // = comando pro make nn reclama, dpois tiro
+    comando[strcspn(comando, "\n")] = 0;                // remove new line
+
+
+	if(strncmp(comando, "lsc", 3) == 0){
+        comando[2] = ' ';                               // remove 'c' : lsc -> ls_
+        ret = system(comando);
         if(ret == -1)
             printf("ERRO\n");
     }
-    else if(strcmp(comando, "cdc") == 0){
-        int ret = chdir(parametro);
+    else if(strncmp(comando, "cdc", 3) == 0){
+        parametro = comando+4;                          // remove "cdc_"
+        ret = chdir(parametro);
         if(ret == -1)
             printf("ERRO: %s\n", strerror(errno));
     }
-    else if(strcmp(comando, "mkdirc") == 0){
-        strcat(strcpy(final, "mkdir "), parametro);
-        int ret = system(final);
+    else if(strncmp(comando, "mkdirc", 6) == 0){
+        comando[5] = ' ';                               // remove 'c' : mkdirc_[]-> mkdir__[]
+        ret = system(comando);
         if(ret == -1)
             printf("ERRO\n");
     }
@@ -57,9 +60,19 @@ void type_process_client(char* comando, char* parametro){
     else if (strcmp(comando, "put") == 0){
         gera_pedido(parametro, 10);
     }
+    else if(strncmp(comando, "exit", 4) == 0){
+        printf(RED "CLIENT TERMINATED\n");
+        exit(0);
+    }
+    else{
+        if(comando[0] != 0)
+            printf("comando invalido: %s\n", comando);
+    }
 }
-
 void gera_pedido(char * dados, int tipo){
+}
+// pro make nn reclamar, dpois vejo
+/*
     char *complemento = (char*)malloc(64-sizeof(dados));
     memset(complemento, '0', sizeof(complemento));
 
@@ -108,3 +121,4 @@ void get(){
 
     close(sock);
 }
+*/

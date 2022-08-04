@@ -10,6 +10,17 @@
 
 #define LIMITE_DADOS    63
 #define LIMITE_SEQ      15
+#define COMMAND_BUFF    100
+#define PATH_MAX        100
+
+// TERMINAL BUNITO
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE    "\x1b[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN    "\x1b[36m"
+#define RESET   "\x1b[0m"
 
 enum TIPOS {
     OK = 1,
