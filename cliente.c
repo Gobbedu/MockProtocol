@@ -3,9 +3,14 @@
 #include "Packet.h"
 
 
+// todos no cliente podem ver a conexao socket
+int soquete;
+
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
+    soquete = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
+
     while(1){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
@@ -13,6 +18,8 @@ int main(){
         fgets(comando, COMMAND_BUFF, stdin);
         client_switch(comando);
     } 
+
+    close(soquete);                                        // fecha socket
     return 0;
 }
 
@@ -20,7 +27,7 @@ int main(){
 void client_switch(char* comando){
     // final do comando c : client
     // final do comando s : server
-    int ret;
+    int ret, bytes;
     char *parametro = comando;      // = comando pro make nn reclama, dpois tiro
     comando[strcspn(comando, "\n")] = 0;                // remove new line
 
@@ -43,82 +50,86 @@ void client_switch(char* comando){
         if(ret == -1)
             printf("ERRO\n");
     }
-    else if(strcmp(comando, "cds") == 0){
-        gera_pedido(parametro, 6);
+    else if(strncmp(comando, "cds", 3) == 0){
+        gera_pedido(parametro, CD);
     }
-    else if(strcmp(comando, "lss") == 0){
-        gera_pedido(parametro, 7);
+    else if(strncmp(comando, "lss", 3) == 0){
+        // gera_pedido(parametro, LS);
+        /* SOH UM TESTE DO PACOTE */
+        unsigned char *packet = make_packet(0, LS, "ls -al");
+        if(!packet){
+            fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+            exit(0);
+        }
+        bytes = send(soquete, packet, strlen((char *)packet), 0);           // envia packet para o socket
+        if(bytes<0)                                                         // pega erros, se algum
+            printf("error: %s\n", strerror(errno));  
+        printf("%d bytes enviados no socket %d\n", bytes, soquete);
+        read_packet(packet);
+        free_packet(packet);
     }
-    else if(strcmp(comando, "mkdirs") == 0){
-        gera_pedido(parametro, 8);
+    else if(strncmp(comando, "mkdirs", 6) == 0){
+        gera_pedido(parametro, MKDIR);
     }
-    else if (strcmp(comando, "get") == 0){
-        gera_pedido(parametro, 9);
+    else if (strncmp(comando, "get", 3) == 0){
+        gera_pedido(parametro, GET);
         // fazendo função para tratar o get
         // get();
     }
-    else if (strcmp(comando, "put") == 0){
-        gera_pedido(parametro, 10);
+    else if (strncmp(comando, "put", 3) == 0){
+        gera_pedido(parametro, PUT);
     }
-    else if(strncmp(comando, "exit", 4) == 0){
-        printf(RED "CLIENT TERMINATED\n");
+
+    else if(strncmp(comando, "exit", 4) == 0){      // sair com estilo
+        printf(RED "CLIENT TERMINATED\n" RESET);      
         exit(0);
     }
     else{
-        if(comando[0] != 0)
+        if(comando[0] != 0)     // diferente de um enter
             printf("comando invalido: %s\n", comando);
     }
 }
-void gera_pedido(char * dados, int tipo){
-}
-// pro make nn reclamar, dpois vejo
 /*
-    char *complemento = (char*)malloc(64-sizeof(dados));
-    memset(complemento, '0', sizeof(complemento));
+void gera_pedido(char * dados, int tipo){
+    // char *complemento = (char*)malloc(64-sizeof(dados));
+    // memset(complemento, '0', sizeof(complemento));
 
-    int sock = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
     int bytes;
 
-    unsigned char* packet = make_packet(0, tipo, dados, complemento);
+    unsigned char* packet = make_packet(0, tipo, dados);
     if(!packet) // se pacote deu errado
         return;
 
     // len of packet must be strlen(), sizeof doesnt work
-    bytes = send(sock, packet, strlen((char *)packet), 0);          // envia packet para o socket
+    bytes = send(soquete, packet, strlen((char *)packet), 0);          // envia packet para o socket
     if(bytes<0)                                                     // pega erros, se algum
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
-    printf("%d bytes enviados no socket %d\n", bytes, sock);
+    printf("%d bytes enviados no socket %d\n", bytes, soquete);
 
     read_packet(packet);
     free(packet);
-
-    close(sock);                                        // fecha socket
 }
 
 // função para tratar o get
 void get(){
-    int sock = ConexaoRawSocket("lo");
-
     unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
     int bytes;
 
-    bytes = recv(sock, buffer, sizeof(buffer), 0);      // recebe dados do socket
+    bytes = recv(soquete, buffer, sizeof(buffer), 0);      // recebe dados do socket
     // buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
 
     if(bytes>0 && is_our_packet(buffer))
     {   // processa pacote se eh nosso pacote
-        if(get_packet_data(buffer) == NACK){
+        if(get_packet_type(buffer) == NACK){
 
         }
-        else if(get_packet_data(buffer) == ERRO){
+        else if(get_packet_type(buffer) == ERRO){
 
         }
-        else if(get_packet_data(buffer) == DESC_ARQ){
+        else if(get_packet_type(buffer) == DESC_ARQ){
 
         }
     }
-
-    close(sock);
 }
 */

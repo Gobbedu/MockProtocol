@@ -74,7 +74,7 @@ typedef struct our_packet{
 // PROTOTIPOS //
 
 /* ================ packet something ================ */
-unsigned char* make_packet(int sequencia, int tipo, char* dados, char* complemento);
+unsigned char* make_packet(int sequencia, int tipo, char* dados);
 int free_packet(unsigned char* packet);
 
 /* ================ packet getters ================ */

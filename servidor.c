@@ -15,7 +15,7 @@ int main()
 
     while(1){
         bytes = recv(sock, buffer, sizeof(buffer), 0);      // recebe dados do socket
-        // buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
+        buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];  // WORKAROUND remove append 'E' do recv/send
 
         if(bytes>0 && is_our_packet(buffer))
         {   // processa pacote se eh nosso pacote
