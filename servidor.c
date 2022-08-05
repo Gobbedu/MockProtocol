@@ -5,14 +5,16 @@
 // global para servidor
 int last_seq;
 int soquete;
+int sequencia_servidor;
+int sequencia_cliente;
 /* sniff sniff */
 int main()
 {
     int bytes, seq;
     unsigned char buffer[TAM_PACOTE];                   // buffer tem no maximo 68 bytes
-    
+    sequencia_cliente = 0;
     // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("lo");
+    soquete = ConexaoRawSocket("eno1");
     /* gera loop no send/recv quando client acaba
         todo: corrigir 
     */
@@ -22,11 +24,9 @@ int main()
         {   // processa pacote se eh nosso pacote
             buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
             seq = get_packet_sequence(buffer);
-            if( seq != last_seq){
-                read_packet(buffer);
-                last_seq = seq;
-            }
+            read_packet(buffer);
             server_switch(buffer);
+            sequencia_cliente = get_packet_sequence(buffer);
         }
     }
 
@@ -38,13 +38,16 @@ int main()
 
 void server_switch(unsigned char* buffer)
 {
+    int resultado;
+    unsigned char flag = '\0';
     unsigned char *resposta;
     int bytes, tipo_lido = get_packet_type(buffer);
+    int ret;
 
 	switch (tipo_lido)
 	{
         case OK:
-            resposta = make_packet(1, OK, NULL);
+            resposta = make_packet(sequencia_cliente, OK, NULL);
             if(!resposta){
                 fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
                 exit(0);
@@ -63,7 +66,37 @@ void server_switch(unsigned char* buffer)
             // funcao q redireciona
             break;
         case CD:
-            // funcao q redireciona
+            resposta = make_packet(sequencia_cliente, CD, NULL);
+            char *cd = get_packet_data(resposta);
+            ret = chdir((cd+strspn(cd, " ")));
+            if(ret == -1){
+                resultado = ERRO;
+                switch (errno){
+                    case 2:
+                        flag = dir_nn_E;
+                        break;
+                    case 13:
+                        flag = sem_permissao;
+                        break;
+                    default:
+                        break;
+                };
+            }
+            else{
+                resultado = OK;
+            }
+            int bytes;
+            unsigned char* packet = make_packet(0, resultado, (char *)flag);
+            if(!packet) // se pacote deu errado
+                return;
+
+            // len of packet must be strlen(), sizeof doesnt work
+            bytes = send(soquete, packet, strlen((char *)packet), 0);          // envia packet para o socket
+            if(bytes<0)                                                     // pega erros, se algum
+                printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+
+            free(packet);
+
             break;
         case LS:
             // funcao q redireciona
