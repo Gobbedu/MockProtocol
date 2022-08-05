@@ -5,9 +5,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 // VAR GLOBAL //
 
+#define MAX_PACOTE      68
 #define LIMITE_DADOS    63
 #define LIMITE_SEQ      15
 #define COMMAND_BUFF    100

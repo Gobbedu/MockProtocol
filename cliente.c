@@ -6,12 +6,75 @@
 // todos no cliente podem ver a conexao socket
 int soquete;
 
+void testes(void){
+    unsigned char buffer[MAX_PACOTE];
+    int bytes;
+    unsigned char *packet = make_packet(0, OK, NULL);
+    if(!packet){
+        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+        exit(0);
+    }
+
+    /* nao deu certo */
+    // struct timeval tv;
+    // tv.tv_sec = 2;
+    // tv.tv_usec = 0;
+    // setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+    // printf("setsockopt: %d\n", bytes);
+
+    bytes = send(soquete, packet, strlen((char *)packet), 0);           // envia packet para o socket
+    if(bytes<0)                                                         // pega erros, se algum
+        printf("error: %s\n", strerror(errno));  
+    printf("%d bytes enviados no socket %d\n", bytes, soquete);
+
+    int seq;
+    double time;
+    clock_t start, end;
+    start = clock();
+    while(1){
+        // sniff sniff, recebeu pacote nosso?
+        bytes = recv(soquete, buffer, MAX_PACOTE, MSG_PEEK);
+        if(bytes>0 && is_our_packet((unsigned char *)buffer)){
+            bytes = recv(soquete, buffer, MAX_PACOTE, 0);
+            seq = get_packet_sequence(buffer);
+            printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
+            if(seq != 0){
+                printf("DEU CERTO!!!!\n");      
+                break;
+            }
+        }
+        
+        // se demoro timeout!
+        end = clock();
+        time = ((double) (end - start)) / CLOCKS_PER_SEC;
+        // printf("\rtime: %10f", time);
+        if(time >= 2){
+            printf("\nTIMEOUT!\n");
+            break;
+        }
+    }
+    return;  
+    sleep(1);
+    printf("esperando recv...\n");
+    bytes = recv(soquete, buffer, sizeof(buffer), 0);
+    printf("bytes: %d  errno: %s\n",bytes, strerror(errno));
+
+    sleep(3);
+    bytes = recv(soquete, buffer, sizeof(buffer), 0);
+    printf("bytes: %d  errno: %s\n",bytes, strerror(errno));
+
+    read_packet((unsigned char*)buffer);
+    free_packet(packet);
+}
+
+
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
     soquete = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
 
-    while(1){
+    testes();
+    while(0){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
 
@@ -27,7 +90,7 @@ int main(){
 void client_switch(char* comando){
     // final do comando c : client
     // final do comando s : server
-    int ret, bytes;
+    int ret;
     char *parametro = comando;      // = comando pro make nn reclama, dpois tiro
     comando[strcspn(comando, "\n")] = 0;                // remove new line
 
@@ -53,20 +116,8 @@ void client_switch(char* comando){
     else if(strncmp(comando, "cds", 3) == 0){
         gera_pedido(parametro, CD);
     }
-    else if(strncmp(comando, "lss", 3) == 0){
-        // gera_pedido(parametro, LS);
-        /* SOH UM TESTE DO PACOTE */
-        unsigned char *packet = make_packet(0, LS, "ls -al");
-        if(!packet){
-            fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
-            exit(0);
-        }
-        bytes = send(soquete, packet, strlen((char *)packet), 0);           // envia packet para o socket
-        if(bytes<0)                                                         // pega erros, se algum
-            printf("error: %s\n", strerror(errno));  
-        printf("%d bytes enviados no socket %d\n", bytes, soquete);
-        read_packet(packet);
-        free_packet(packet);
+    else if(strncmp(comando, "lss", 3) == 0){   
+        gera_pedido(parametro, LS);
     }
     else if(strncmp(comando, "mkdirs", 6) == 0){
         gera_pedido(parametro, MKDIR);
@@ -89,8 +140,9 @@ void client_switch(char* comando){
             printf("comando invalido: %s\n", comando);
     }
 }
-/*
 void gera_pedido(char * dados, int tipo){
+}
+/*
     // char *complemento = (char*)malloc(64-sizeof(dados));
     // memset(complemento, '0', sizeof(complemento));
 

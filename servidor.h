@@ -7,6 +7,6 @@
 #include <stdio.h>
 
 
-void type_process_server(unsigned char* buffer,int buflen);
+void server_switch(unsigned char* buffer);
 
 #endif /* __SERVIDOR__*/ 

@@ -4,39 +4,54 @@
 
 // global para servidor
 int last_packet_sequence = 0;
-
+int soquete;
 /* sniff sniff */
 int main()
 {
-    // abre o socket -> lo vira ifconfig to pc que recebe
-    int sock = ConexaoRawSocket("lo");
-    unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
     int bytes;
-
+    unsigned char buffer[MAX_PACOTE];                   // buffer tem no maximo 68 bytes
+    
+    // abre o socket -> lo vira ifconfig to pc que recebe
+    soquete = ConexaoRawSocket("lo");
+    /* gera loop no send/recv quando client acaba
+        todo: corrigir 
+    */
     while(1){
-        bytes = recv(sock, buffer, sizeof(buffer), 0);      // recebe dados do socket
-        buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];  // WORKAROUND remove append 'E' do recv/send
-
+        bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
         if(bytes>0 && is_our_packet(buffer))
         {   // processa pacote se eh nosso pacote
+            buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
             read_packet(buffer);
+            server_switch(buffer);
         }
     }
 
-    close(sock);
+    close(soquete);
     printf("servidor terminado\n");
 }
 
 // check_paridade_vertical sobre o campo Dados -> NACK ou type_process
 
-void type_process_server(unsigned char* buffer,int buflen)
+void server_switch(unsigned char* buffer)
 {
-	struct our_packet *pacote = (struct our_packet*)(buffer + sizeof (struct our_packet));
-	/* we will se UDP Protocol only*/ 
-	switch (pacote->tipo)    //see /etc/protocols file 
+    unsigned char *resposta;
+    int bytes, tipo_lido = get_packet_type(buffer);
+    printf("TIPO LIDO %d\n", tipo_lido);
+
+	switch (tipo_lido)
 	{
         case OK:
-            // funcao q redireciona
+            resposta = make_packet(1, OK, NULL);
+            if(!resposta){
+                fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+                exit(0);
+            }
+            printf("CRIOU PACOTE\n");
+            read_packet(resposta);
+            bytes = send(soquete, resposta, strlen((char *)resposta), 0);           // envia packet para o socket
+            if(bytes<0)                                                         // pega erros, se algum
+                printf("error: %s\n", strerror(errno));  
+            free_packet(resposta);
             break;
         case NACK:
             // funcao q redireciona

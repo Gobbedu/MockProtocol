@@ -27,10 +27,14 @@ unsigned char   dir_nn_E        = 'A',
 unsigned char* make_packet(int sequencia, int tipo, char* dados)
 {
     // VALIDA //
-    int len_dados = strlen(dados);     // nao precisa contar o \0
-    if(len_dados > LIMITE_DADOS){
-        printf("ERRO: tamanho da mensagem excede limite de dados do pacote: %d\n", len_dados);
-        return NULL;
+    int len_dados = 0;
+    if(dados)
+    {   // se existe dados
+        len_dados = strlen(dados);     // nao precisa contar o \0
+        if(len_dados > LIMITE_DADOS){
+            printf("ERRO: tamanho da mensagem excede limite de dados do pacote: %d\n", len_dados);
+            return NULL;
+        }
     }
 
     if(sequencia > LIMITE_SEQ){
@@ -53,11 +57,13 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
     int len_packet          =   (len_header+len_dados+len_complemento+1);   // header + dados + 1 -> 1 para paridade dos dados
     unsigned char *packet   =   malloc(len_packet);                         // aloca mem pro pacote
     memset(packet, 0, len_packet);                                          // limpa lixo na memoria alocada
+    packet[len_packet] = '\0';                                              // redundante, pode ser removido
 
     // define informacao do header
+    int size_dados = (len_dados+len_complemento==0)?1:len_dados+len_complemento;
     envelope_packet header_t;
-    header_t.MI         = MARCADOR_INICIO;      // 0111.1110 -> Marcador de Inicio
-    header_t.tamanho    = len_dados + len_complemento;   
+    header_t.MI         = MARCADOR_INICIO;  // 0111.1110 -> Marcador de Inicio
+    header_t.tamanho    = size_dados;       // se nao tem dados, substitui 0 ('\0') por 1, evita strlen crash
     header_t.sequencia  = sequencia;
     header_t.tipo       = tipo;
 
@@ -70,24 +76,21 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
     packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
 
     // copia dados na sessao dados, excluindo o \0 de 'data'
-    packet[len_packet-1] = dados[0];        // init paridade do primeiro byte dos dados
-    packet[len_header] = dados[0];          // init copia de dados
-    for(int i = 1; i < len_dados; i++)      // nao inclui ultimo byte \0, reescreve paridade
-    {                 
+    for(int i = 0; i < len_dados; i++){     // nao inclui ultimo byte \0, reescreve paridade
         packet[len_header+i] = dados[i];    // salva 'data' no pacote 
         packet[len_packet-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)
     }
 
     // caso exista complemento, preenche packet
     char fill = ' ';
-    for(int i = len_header+len_dados; i < len_packet-1; i++)    // a partir de onde dados parou
-    {                                                           // ate penultimo byte do packet
-        packet[i] = fill;
+    for(int i = len_header+len_dados; i < len_packet-1; i++){   // a partir de onde dados parou
+        packet[i] = fill;                                       // ate penultimo byte do packet
         packet[len_packet-1] ^= fill;
     }
 
-    //final de string sempre tem \0, indica final do pacote para strlen()
-    packet[len_packet] = '\0';      // redundante, pode ser removido
+    // se zero, muda pra um pra evitar strlen crash
+    packet[len_packet-1] = (packet[len_packet-1] == 0) ? 1 : packet[len_packet-1];
+
     return packet;
 }
 
