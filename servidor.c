@@ -3,13 +3,13 @@
 #include "ConexaoRawSocket.h"
 
 // global para servidor
-int last_packet_sequence = 0;
+int last_seq;
 int soquete;
 /* sniff sniff */
 int main()
 {
-    int bytes;
-    unsigned char buffer[MAX_PACOTE];                   // buffer tem no maximo 68 bytes
+    int bytes, seq;
+    unsigned char buffer[TAM_PACOTE];                   // buffer tem no maximo 68 bytes
     
     // abre o socket -> lo vira ifconfig to pc que recebe
     soquete = ConexaoRawSocket("lo");
@@ -21,7 +21,11 @@ int main()
         if(bytes>0 && is_our_packet(buffer))
         {   // processa pacote se eh nosso pacote
             buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
-            read_packet(buffer);
+            seq = get_packet_sequence(buffer);
+            if( seq != last_seq){
+                read_packet(buffer);
+                last_seq = seq;
+            }
             server_switch(buffer);
         }
     }
@@ -36,7 +40,6 @@ void server_switch(unsigned char* buffer)
 {
     unsigned char *resposta;
     int bytes, tipo_lido = get_packet_type(buffer);
-    printf("TIPO LIDO %d\n", tipo_lido);
 
 	switch (tipo_lido)
 	{
@@ -46,11 +49,11 @@ void server_switch(unsigned char* buffer)
                 fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
                 exit(0);
             }
-            printf("CRIOU PACOTE\n");
-            read_packet(resposta);
+            // read_packet(resposta);
             bytes = send(soquete, resposta, strlen((char *)resposta), 0);           // envia packet para o socket
             if(bytes<0)                                                         // pega erros, se algum
                 printf("error: %s\n", strerror(errno));  
+            recv(soquete, resposta, strlen((char *)resposta), 0); // remove do queue
             free_packet(resposta);
             break;
         case NACK:

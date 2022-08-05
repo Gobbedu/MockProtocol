@@ -6,65 +6,72 @@
 // todos no cliente podem ver a conexao socket
 int soquete;
 
+
+void cds(void)
+{
+    /* errno: 
+        A - No such file or directory : 2
+        B - Permission denied : ? 
+    */
+}
+
 void testes(void){
-    unsigned char buffer[MAX_PACOTE];
-    int bytes;
+    double time;
+    int bytes, seq;
+    clock_t start, end;
+    unsigned char buffer[TAM_PACOTE];
     unsigned char *packet = make_packet(0, OK, NULL);
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         exit(0);
     }
 
-    /* nao deu certo */
-    // struct timeval tv;
-    // tv.tv_sec = 2;
-    // tv.tv_usec = 0;
-    // setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
-    // printf("setsockopt: %d\n", bytes);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100;
+    int min = 3;
+    setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+    setsockopt(soquete, SOL_SOCKET, SO_RCVLOWAT, &min, sizeof(int));
+    setsockopt(soquete, SOL_SOCKET, SO_SNDLOWAT, &min, sizeof(int));
 
     bytes = send(soquete, packet, strlen((char *)packet), 0);           // envia packet para o socket
     if(bytes<0)                                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));  
     printf("%d bytes enviados no socket %d\n", bytes, soquete);
 
-    int seq;
-    double time;
-    clock_t start, end;
+
     start = clock();
     while(1){
         // sniff sniff, recebeu pacote nosso?
-        bytes = recv(soquete, buffer, MAX_PACOTE, MSG_PEEK);
-        if(bytes>0 && is_our_packet((unsigned char *)buffer)){
-            bytes = recv(soquete, buffer, MAX_PACOTE, 0);
+        bytes = recv(soquete, buffer, TAM_PACOTE, MSG_PEEK);
+        if( bytes < 0)
+            printf("\nrecv peek : %s\n", strerror(errno));
+
+        if(bytes>0 && is_our_packet((unsigned char *)buffer))
+        {
+            bytes = recv(soquete, buffer, TAM_PACOTE, 0);
+            if(bytes < 0)
+                printf("\nrecv 0 :%s\n", strerror(errno));
+
             seq = get_packet_sequence(buffer);
             printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
             if(seq != 0){
                 printf("DEU CERTO!!!!\n");      
                 break;
             }
-        }
+        }   
         
         // se demoro timeout!
         end = clock();
         time = ((double) (end - start)) / CLOCKS_PER_SEC;
-        // printf("\rtime: %10f", time);
-        if(time >= 2){
+        printf("\rtime: %10f", time);
+        if(time >= 0.1){
             printf("\nTIMEOUT!\n");
             break;
         }
     }
     return;  
-    sleep(1);
-    printf("esperando recv...\n");
-    bytes = recv(soquete, buffer, sizeof(buffer), 0);
-    printf("bytes: %d  errno: %s\n",bytes, strerror(errno));
-
-    sleep(3);
-    bytes = recv(soquete, buffer, sizeof(buffer), 0);
-    printf("bytes: %d  errno: %s\n",bytes, strerror(errno));
-
-    read_packet((unsigned char*)buffer);
-    free_packet(packet);
 }
 
 
@@ -102,10 +109,11 @@ void client_switch(char* comando){
             printf("ERRO\n");
     }
     else if(strncmp(comando, "cdc", 3) == 0){
-        parametro = comando+4;                          // remove "cdc_"
-        ret = chdir(parametro);
+        parametro = comando+3;                          // remove "cdc"
+        printf("num of _ after cdc: %ld\n", strspn(parametro, " "));
+        ret = chdir((parametro+strspn(parametro, " ")));
         if(ret == -1)
-            printf("ERRO: %s\n", strerror(errno));
+            printf("ERRO: %s, errno: %d  parametro: (%s)\n", strerror(errno), errno, parametro);
     }
     else if(strncmp(comando, "mkdirc", 6) == 0){
         comando[5] = ' ';                               // remove 'c' : mkdirc_[]-> mkdir__[]

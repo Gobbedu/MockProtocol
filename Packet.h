@@ -9,7 +9,7 @@
 
 // VAR GLOBAL //
 
-#define MAX_PACOTE      68
+#define TAM_PACOTE      68
 #define LIMITE_DADOS    63
 #define LIMITE_SEQ      15
 #define COMMAND_BUFF    100

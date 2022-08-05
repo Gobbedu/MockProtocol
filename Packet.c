@@ -49,8 +49,8 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
 
     // CRIA PACOTE //
     int len_complemento = 0;
-    if(len_dados < 10)                      // adicionar complemento se dados  3       10        1
-        len_complemento = 10 - len_dados;   // se pacote ficar menor que 14 (header + dados + paridade)
+    if(len_dados < LIMITE_DADOS)                      // adicionar complemento se dados  3       10        1
+        len_complemento = LIMITE_DADOS - len_dados;   // se pacote ficar menor que 14 (header + dados + paridade)
 
     // aloca memoria para o pacote
     int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
@@ -58,6 +58,7 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
     unsigned char *packet   =   malloc(len_packet);                         // aloca mem pro pacote
     memset(packet, 0, len_packet);                                          // limpa lixo na memoria alocada
     packet[len_packet] = '\0';                                              // redundante, pode ser removido
+    printf("tamanho pacote: %d", len_packet);
 
     // define informacao do header
     int size_dados = (len_dados+len_complemento==0)?1:len_dados+len_complemento;
