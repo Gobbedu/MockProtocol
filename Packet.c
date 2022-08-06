@@ -53,10 +53,9 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int by
 
     // aloca memoria para o pacote
     int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
-    int len_packet          =   (len_header+bytes_dados+len_complemento+1);   // header + dados + 1 -> 1 para paridade dos dados
+    int len_packet          =   (len_header+bytes_dados+len_complemento+1); // header + dados + 1 -> 1 para paridade dos dados
     unsigned char *packet   =   malloc(len_packet);                         // aloca mem pro pacote
     memset(packet, 0, len_packet);                                          // limpa lixo na memoria alocada
-    packet[len_packet] = '\0';                                              // redundante, pode ser removido
 
     // define informacao do header
     envelope_packet header_t;
@@ -85,9 +84,6 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int by
         packet[i] = fill;                                       // ate penultimo byte do packet
         packet[len_packet-1] ^= fill;
     }
-
-    // se zero, muda pra um pra evitar strlen crash
-    packet[len_packet-1] = (packet[len_packet-1] == 0) ? 1 : packet[len_packet-1];
 
     return packet;
 }
@@ -196,7 +192,7 @@ int get_packet_type(unsigned char* buffer){
     return header->tipo;
 }
 
-// retorna sessao dados do pacote como string
+// retorna sessao dados do pacote como string (deve receber free)
 char* get_packet_data(unsigned char* buffer){               // empurra ponteiro
     // return (char*)(buffer + sizeof(envelope_packet));       // depois do header comeca os dados do pacote
     int size = get_packet_tamanho(buffer);

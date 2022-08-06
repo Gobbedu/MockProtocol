@@ -74,9 +74,9 @@ void client_switch(char* comando){
     }
     else if(strncmp(comando, "mkdirs", 6) == 0)
     {   // mkdir usa syscall, pode ter espacos
-        // comando[5] = ' ';                   // "mkdirs_[...]" -> "mkdir__[...]" 
-        comando += 6;
-        comando += strspn(comando, " ");
+        comando[5] = ' ';                   // "mkdirs_[...]" -> "mkdir__[...]" 
+        // comando += 6;
+        // comando += strspn(comando, " ");
 
         if(cliente_sinaliza(comando, MKDIR))
             printf("criou diretorio no servidor com sucesso!\n");
@@ -117,6 +117,7 @@ int cliente_sinaliza(char *comando, int tipo)
 
     int bytes, timeout, seq, ok, lost_conn;
     unsigned char resposta[TAM_PACOTE];
+    char* data;
 
     seq = sequencia();
     /* cria pacote com parametro para cd no server */
@@ -156,24 +157,30 @@ int cliente_sinaliza(char *comando, int tipo)
             if( bytes>0 && 
                 is_our_packet((unsigned char *)resposta) 
                 && get_packet_sequence(resposta) == get_seq()
-            ){
+            ){  
+                data = get_packet_data(resposta);
                 switch (get_packet_type(resposta))
                 {
                     case OK:
                         ok = 1;  
-                        printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), get_packet_data(resposta));
+                        printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+                        free_packet(packet);
                         return true;
 
                     case NACK:
                         break;  // exit response loop & re-send 
 
                     case ERRO:
-                        printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), get_packet_data(resposta));
+                        printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+                        free_packet(packet);
                         return false;
                 }
+                free(data);
             }
         }
     }
+
+    free_packet(packet);
 
     if(!(timeout<3)){
         printf("Erro de comunicacao, servidor nao responde :(\n");

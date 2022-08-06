@@ -24,7 +24,6 @@ int main()
         bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
         if(bytes>0 && is_our_packet(buffer))
         {   // processa pacote se eh nosso pacote
-            buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
             read_packet(buffer);
             server_switch(buffer);
         }
@@ -129,6 +128,7 @@ void cdc(unsigned char* buffer){
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
     free(resposta);
+    free(cd);
 }
 
 // trata_tipos: case switch p/ cada ENUM uma funcao
@@ -138,27 +138,29 @@ void mkdirc(unsigned char* buffer){
     int resultado;
     unsigned char *resposta;
     char flag[1];
-    char *mkdir, *dir;
+    char *mkdir; // *dir;
     int bytes;
     int ret;
 
-    dir = (char *) get_packet_data(buffer);
-    char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
-    strncpy(d, dir, strcspn(dir, " "));
-    mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
-    strcat(strcpy(mkdir, "mkdir "), d);
-    free(d);
+    // dir = (char *) get_packet_data(buffer);
+    // char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    // strncpy(d, dir, strcspn(dir, " "));
+    // mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
+    // strcat(strcpy(mkdir, "mkdir "), d);
+    // free(d);
+    // ret = system(mkdir);
+    mkdir = get_packet_data(buffer);
     ret = system(mkdir);
-    // ret = system(get_packet_data(buffer));
 
-    if(ret != 0){        // 256 : erro q retorna se dir ja existe
+    // 256 : erro q retorna se dir ja existe
+    if(ret != 0){        
         resultado = ERRO;
-        switch (errno){
+        switch (ret){
             case 256:
                 /* 1 = Operação não permitida */
                 flag[0] = dir_ja_E;
                 break;
-            case 13:
+            case 13*256:    
                 flag[0] = sem_permissao;
                 break;
             default:
@@ -177,7 +179,7 @@ void mkdirc(unsigned char* buffer){
     if(bytes<0)                                                     // pega erros, se algum
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
-    free(resposta);
+    free_packet(resposta);
     free(mkdir);
 }
 
