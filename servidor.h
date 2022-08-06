@@ -10,6 +10,6 @@
 void server_switch(unsigned char* buffer);
 void cdc(unsigned char* buffer);
 void mkdirc(unsigned char* buffer);
-void get(buffer);
+void get(unsigned char *buffer);
 
 #endif /* __SERVIDOR__*/ 

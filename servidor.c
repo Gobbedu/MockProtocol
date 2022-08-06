@@ -190,13 +190,13 @@ void mkdirc(unsigned char* buffer){
     free(resposta);
 }
 
-void get(buffer){
-    int resultado;
-    unsigned char *resposta;
-    char *get, flag[1];
-    int bytes;
-    int ret;
+void get(unsigned char *buffer){
+    // int resultado;
+    // unsigned char *resposta;
+    // char *get, flag[1];
+    // int bytes;
+    // int ret;
 
-    get = (char *) get_packet_data(buffer);
+    // get = (char *) get_packet_data(buffer);
     
 }
