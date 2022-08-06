@@ -59,7 +59,6 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int by
     packet[len_packet] = '\0';                                              // redundante, pode ser removido
 
     // define informacao do header
-    int size_dados = (bytes_dados+len_complemento==0)?1:bytes_dados+len_complemento;
     envelope_packet header_t;
     header_t.MI         = MARCADOR_INICIO;  // 0111.1110 -> Marcador de Inicio
     header_t.tamanho    = bytes_dados;       // se nao tem dados, substitui 0 ('\0') por 1, evita strlen crash

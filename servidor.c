@@ -36,8 +36,7 @@ int main()
 
 void server_switch(unsigned char* buffer)
 {
-    unsigned char *resposta;
-    int bytes, tipo_lido = get_packet_type(buffer);
+    int tipo_lido = get_packet_type(buffer);
 
 	switch (tipo_lido)
 	{
@@ -154,7 +153,6 @@ void mkdirc(unsigned char* buffer){
 
     if(ret != 0){        // 256 : erro q retorna se dir ja existe
         resultado = ERRO;
-        printf("erro foi : %s\n", strerror(errno));
         switch (errno){
             case 256:
                 /* 1 = Operação não permitida */
@@ -166,6 +164,7 @@ void mkdirc(unsigned char* buffer){
             default:
                 break;
         };
+        printf("erro %d foi : %s ; flag (%s)\n",errno, strerror(errno), flag);
     }
     else{
         resultado = OK;
@@ -179,6 +178,7 @@ void mkdirc(unsigned char* buffer){
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
     free(resposta);
+    free(mkdir);
 }
 
 void get(unsigned char *buffer){
