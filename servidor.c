@@ -67,8 +67,8 @@ void server_switch(unsigned char* buffer)
             // funcao q redireciona
             break;
         case CD:
-            resposta = make_packet(sequencia_cliente, CD, NULL);
-            char *cd = get_packet_data(resposta);
+            unsigned char* packet = make_packet(sequencia_cliente, CD, NULL);
+            char *cd = get_packet_data(packet);
             ret = chdir((cd+strspn(cd, " ")));
             if(ret == -1){
                 resultado = ERRO;
@@ -87,17 +87,17 @@ void server_switch(unsigned char* buffer)
                 resultado = OK;
             }
             int bytes;
-            unsigned char* packet = make_packet(sequencia_servidor, resultado, (char *)flag);
-            if(!packet) // se pacote deu errado
+            resposta = make_packet(sequencia_servidor, resultado, (char *)flag);
+            if(!resposta) // se pacote deu errado
                 return;
 
             sequencia_servidor++;
             // len of packet must be strlen(), sizeof doesnt work
-            bytes = send(soquete, packet, strlen((char *)packet), 0);          // envia packet para o socket
+            bytes = send(soquete, resposta, strlen((char *)resposta), 0);          // envia packet para o socket
             if(bytes<0)                                                     // pega erros, se algum
                 printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
-            free(packet);
+            free(resposta);
 
             break;
         case LS:
