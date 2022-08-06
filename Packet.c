@@ -13,7 +13,8 @@ unsigned char   dir_nn_E        = 'A',
                 sem_espaco      = 'E',
                 MARCADOR_INICIO = '~';  // 126 -> 0111.1110
 
-
+unsigned int now_sequence = 0;
+unsigned int last_sequence = 0;
 /* ======================== FUNCOES GENERICAS PARA PACOTES ======================== */
 
 // enquadramento
@@ -24,20 +25,20 @@ unsigned char   dir_nn_E        = 'A',
 /* ============================== PACKET FUNCTIONS ============================== */
 
 // cria e seta pacote inteiro do zero, retorna nullo se houve ERRO
-unsigned char* make_packet(int sequencia, int tipo, char* dados)
+unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados)
 {
     // VALIDA //
     int len_dados = 0;
     if(dados)
     {   // se existe dados
         len_dados = strlen(dados);     // nao precisa contar o \0
-        if(len_dados > LIMITE_DADOS){
+        if(len_dados > MAX_DADOS){
             printf("ERRO: tamanho da mensagem excede limite de dados do pacote: %d\n", len_dados);
             return NULL;
         }
     }
 
-    if(sequencia > LIMITE_SEQ){
+    if(sequencia > MAX_SEQUENCE){
         printf("ERRO: tamanho da sequencia excede limite do pacote: %d\n", sequencia);
         return NULL;
     }
@@ -49,8 +50,8 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
 
     // CRIA PACOTE //
     int len_complemento = 0;
-    if(len_dados < LIMITE_DADOS)                      // adicionar complemento se dados  3       10        1
-        len_complemento = LIMITE_DADOS - len_dados;   // se pacote ficar menor que 14 (header + dados + paridade)
+    if(len_dados < MAX_DADOS)                      // adicionar complemento se dados  3       10        1
+        len_complemento = MAX_DADOS - len_dados;   // se pacote ficar menor que 14 (header + dados + paridade)
 
     // aloca memoria para o pacote
     int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
@@ -101,6 +102,24 @@ int free_packet(unsigned char* packet)
 
     free(packet);
     return 1;
+}
+
+unsigned int sequencia(void)
+{
+    last_sequence = now_sequence;
+    now_sequence = (now_sequence+1)%MAX_SEQUENCE;
+    printf("sequence is %d and last was %d\n", now_sequence, last_sequence);
+    return now_sequence;
+}
+
+unsigned int get_seq(void){
+    return now_sequence;
+}
+unsigned int get_lastseq(void){
+    return last_sequence;
+}
+unsigned int next_seq(void){
+    return (now_sequence+1)%MAX_SEQUENCE;
 }
 
 

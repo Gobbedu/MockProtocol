@@ -12,5 +12,6 @@ void client_switch(char* comando);
 void cds(char *comando);
 void get(char *comando);
 void mkdirs(char *comando);
+int cliente_sinaliza(char *comando, int tipo);
 
 #endif

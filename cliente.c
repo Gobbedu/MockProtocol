@@ -2,24 +2,13 @@
 #include "cliente.h"
 #include "Packet.h"
 
-
 // todos no cliente podem ver a conexao socket
 int soquete;
-int sequencia_cliente, sequencia_servidor, lastseq_cliente, lastseq_servidor;
-
-int seq_cli(void){
-    lastseq_cliente = sequencia_cliente;
-    sequencia_cliente = (sequencia_cliente+1)%LIMITE_SEQ;
-    return sequencia_cliente;
-}
-
 
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    lastseq_cliente = 0;
-    sequencia_cliente = 0;
     soquete = ConexaoRawSocket("lo");        // abre o socket -> lo vira ifconfig to pc que manda
     // soquete = ConexaoRawSocket("enp1s0f1");     // abre o socket -> lo vira ifconfig to pc que manda
 
@@ -50,15 +39,14 @@ void client_switch(char* comando){
     char *parametro = comando;      // = comando pro make nn reclama, dpois tiro
     comando[strcspn(comando, "\n")] = 0;                // remove new line
 
+    // LOCAL //
 	if(strncmp(comando, "lsc", 3) == 0)
     {
         comando[2] = ' ';                               // remove 'c' : lsc -> ls_
         ret = system(comando);
         if(ret == -1)
-            printf("ERRO\n");
+            printf("ERRO: %s, errno: %d  parametro: (%s)\n", strerror(errno), errno, parametro);
     }
-    else if(strcmp(comando, "teste") == 0 ){testes();}
-
     else if(strncmp(comando, "cdc", 3) == 0)
     {
         parametro = comando+3;                          // remove "cdc"
@@ -71,19 +59,30 @@ void client_switch(char* comando){
         comando[5] = ' ';                               // remove 'c' : mkdirc_[]-> mkdir__[]
         ret = system(comando);
         if(ret == -1)
-            printf("ERRO\n");
+            printf("ERRO: %s, errno: %d  parametro: (%s)\n", strerror(errno), errno, parametro);
     }
+
+    // SERVIDOR //
     else if(strncmp(comando, "cds", 3) == 0)
-    {
-        cds(comando);
+    {   // chdir nao pode ter espacos errados
+        comando += 3;                       // remove "cds"
+        comando += strspn(comando, " ");    // remove ' '  no inicio do comando
+        if(cliente_sinaliza(comando, CD))
+            printf("moveu de diretorio no servidor com sucesso!\n");
+        else
+            printf("nao foi possivel mover de diretorio no servidor..\n");
+    }
+    else if(strncmp(comando, "mkdirs", 6) == 0)
+    {   // mkdir usa syscall, pode ter espacos
+        comando[5] = ' ';                   // "mkdirs_[...]" -> "mkdir__[...]" 
+        if(cliente_sinaliza(comando, MKDIR))
+            printf("criou diretorio no servidor com sucesso!\n");
+        else
+            printf("nao foi possivel criar diretorio no servidor..\n");
     }
     else if(strncmp(comando, "lss", 3) == 0)
     {   
 
-    }
-    else if(strncmp(comando, "mkdirs", 6) == 0)
-    {
-        mkdirs(comando);
     }
     else if (strncmp(comando, "get", 3) == 0)
     {
@@ -93,17 +92,94 @@ void client_switch(char* comando){
     {
         
     }
-    else if(strncmp(comando, "exit", 4) == 0)
-    {      // sair com estilo
-        printf(RED "CLIENT TERMINATED\n" RESET);      
-        exit(0);
-    }
     else
     {
         if(comando[0] != 0)     // diferente de um enter
             printf("comando invalido: %s\n", comando);
+        if(strncmp(comando, "exit", 4) == 0)
+        {   // sair com estilo
+            printf(RED "CLIENT TERMINATED\n" RESET);      
+            exit(0);
+        }
     }
 }
+
+
+int cliente_sinaliza(char *comando, int tipo)
+{
+    /* errno: 
+    A - No such file or directory : 2
+    B - Permission denied : 13
+    */
+
+    int bytes, timeout, seq, ok, lost_conn;
+    unsigned char resposta[TAM_PACOTE];
+
+    seq = sequencia();
+    /* cria pacote com parametro para cd no server */
+    unsigned char *packet = make_packet(seq, tipo, comando);
+    if(!packet)
+        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+
+    // read_packet(packet);
+
+    timeout = ok = lost_conn = 0;
+    // exit if ok received or 3 timeouts
+    while(!ok && lost_conn<3){ 
+
+        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes < 0){                                      // pega erros, se algum
+            printf("error: %s\n", strerror(errno));  
+        }
+        printf("%d bytes enviados no socket %d\n", bytes, soquete);
+        // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
+
+        /* said do loop soh se server responde ok */
+        timeout = 0;
+        while(1)
+        {   
+            if(timeout == 3){
+                lost_conn++;
+                break;
+            }
+            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
+            // if(errno == EAGAIN)    // nao tem oq ler
+            if(errno)
+            {
+                printf("recv error : %s; errno: %d\n", strerror(errno), errno);
+                timeout++;
+            }
+
+            if( bytes>0 && 
+                is_our_packet((unsigned char *)resposta) && 
+                get_packet_sequence(resposta) == next_seq()
+            ){
+                switch (get_packet_type(resposta))
+                {
+                    case OK:
+                        ok = 1;  
+                        printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), get_packet_data(resposta));
+                        return true;
+
+                    case NACK:
+                        break;  // exit response loop & re-send 
+
+                    case ERRO:
+                        printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
+                        return false;
+                }
+            }  
+        }
+    }
+
+    if(!(timeout<3)){
+        printf("Erro de comunicacao, servidor nao responde :(\n");
+        return false;
+    }
+
+    return true;
+}
+
 
 void cds(char *comando){
     /* errno: 
@@ -118,7 +194,7 @@ void cds(char *comando){
     comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(seq_cli(), CD, comando);
+    unsigned char *packet = make_packet(sequencia(), CD, comando);
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -154,7 +230,7 @@ void cds(char *comando){
             seq = get_packet_sequence(resposta);
             if( bytes>0 && 
                 is_our_packet((unsigned char *)resposta) && 
-                sequencia_cliente != seq  
+                seq == next_seq()
             ){
                 switch (get_packet_type(resposta))
                 {
@@ -193,7 +269,7 @@ void get(char *comando){
     comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para get no server */
-    unsigned char *packet = make_packet(seq_cli(), GET, comando);
+    unsigned char *packet = make_packet(sequencia(), GET, comando);
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -225,7 +301,7 @@ void get(char *comando){
             seq = get_packet_sequence(resposta);
             if( bytes>0 && 
                 is_our_packet((unsigned char *)resposta) && 
-                sequencia_cliente != seq  
+                seq == next_seq()
             ){
                 switch (get_packet_type(resposta))
                 {
@@ -254,11 +330,11 @@ void mkdirs(char *comando){
     unsigned char resposta[TAM_PACOTE];
 
     /* filtra pacote, envia somente parametro do mkdir */
-    comando += 6;                       // remove "mkdirs"
-    comando += strspn(comando, " ");    // remove ' '  no inicio do comando
+    comando[5] = ' ';                       // remove "mkdirs"
+    // comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para mkdir no server */
-    unsigned char *packet = make_packet(seq_cli(), MKDIR, comando);
+    unsigned char *packet = make_packet(sequencia(), MKDIR, comando);
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -294,14 +370,14 @@ void mkdirs(char *comando){
             seq = get_packet_sequence(resposta);
             if( bytes>0 && 
                 is_our_packet((unsigned char *)resposta) && 
-                sequencia_cliente != seq  
+                seq  == next_seq()
             ){
                 switch (get_packet_type(resposta))
                 {
                     case OK:
                         ok = 1;  
                         printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
-                        printf("mensagem: %s\n", get_packet_data(resposta));
+                        printf("tipo: %s ; mensagem: %s\n",get_type_packet(resposta), get_packet_data(resposta));
                         printf("DEU CERTO ?!!!!\n");    
                         return;
 

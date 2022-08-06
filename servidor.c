@@ -3,16 +3,12 @@
 #include "ConexaoRawSocket.h"
 
 // global para servidor
-int last_seq;
 int soquete;
-int sequencia_servidor;
-int sequencia_cliente;
 /* sniff sniff */
 int main()
 {
     int bytes;
     unsigned char buffer[TAM_PACOTE];                   // buffer tem no maximo 68 bytes
-    sequencia_servidor = 0;
     // abre o socket -> lo vira ifconfig to pc que recebe
     soquete = ConexaoRawSocket("lo");
 
@@ -22,12 +18,9 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
-    /* gera loop no send/recv quando client acaba
-        todo: corrigir 
-    */
     while(1){
         bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
-        if(bytes>0 && is_our_packet(buffer))
+        if(bytes>0 && is_our_packet(buffer) && get_packet_sequence(buffer) == get_seq())
         {   // processa pacote se eh nosso pacote
             buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
             read_packet(buffer);
@@ -47,12 +40,11 @@ void server_switch(unsigned char* buffer)
 	switch (tipo_lido)
 	{
         case OK:
-            resposta = make_packet(sequencia_servidor, OK, NULL);
+            resposta = make_packet(sequencia(), OK, NULL);
             if(!resposta){
                 fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
                 exit(0);
             }
-            sequencia_servidor++;
             // read_packet(resposta);
             bytes = send(soquete, resposta, TAM_PACOTE, 0);           // envia packet para o socket
             if(bytes<0)                                                         // pega erros, se algum
@@ -111,7 +103,6 @@ void cdc(unsigned char* buffer){
     int ret;
 
     cd = (char *) get_packet_data(buffer);
-    // ret = chdir((cd+strspn(cd, " ")));
     char *d = malloc(strcspn(cd, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
     strncpy(d, cd, strcspn(cd, " "));
@@ -138,11 +129,10 @@ void cdc(unsigned char* buffer){
     else{
         resultado = OK;
     }
-    resposta = make_packet(sequencia_servidor, resultado, flag);
+    resposta = make_packet(sequencia(), resultado, flag);
     if(!resposta) // se pacote deu errado
         return;
 
-    sequencia_servidor++;
     // len of packet must be strlen(), sizeof doesnt work
     bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
     if(bytes<0)                                                     // pega erros, se algum
@@ -157,19 +147,19 @@ void cdc(unsigned char* buffer){
 void mkdirc(unsigned char* buffer){
     int resultado;
     unsigned char *resposta;
-    char *dir, flag[1];
-    char *mkdir;
+    char flag[1];
+    // char *mkdir, *dir;
     int bytes;
     int ret;
 
-    dir = (char *) get_packet_data(buffer);
-    char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
-    strncpy(d, dir, strcspn(dir, " "));
-    mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
-    strcat(strcpy(mkdir, "mkdir "), d);
-    ret = system(mkdir);
+    // dir = (char *) get_packet_data(buffer);
+    // char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    // strncpy(d, dir, strcspn(dir, " "));
+    // mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
+    // strcat(strcpy(mkdir, "mkdir "), d);
+    // free(d);
+    ret = system(get_packet_data(buffer));
 
-    free(d);
     if(ret == -1){
         resultado = ERRO;
         printf("erro foi : %s\n", strerror(errno));
@@ -188,11 +178,10 @@ void mkdirc(unsigned char* buffer){
     else{
         resultado = OK;
     }
-    resposta = make_packet(sequencia_servidor, resultado, flag);
+    resposta = make_packet(sequencia(), resultado, flag);
     if(!resposta) // se pacote deu errado
         return;
 
-    sequencia_servidor++;
     // len of packet must be strlen(), sizeof doesnt work
     bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
     if(bytes<0)                                                     // pega erros, se algum

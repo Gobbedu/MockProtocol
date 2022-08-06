@@ -1,6 +1,7 @@
 #ifndef PACKET_H
 #define PACKET_H
 
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,8 +11,8 @@
 // VAR GLOBAL //
 
 #define TAM_PACOTE      67
-#define LIMITE_DADOS    63
-#define LIMITE_SEQ      15
+#define MAX_DADOS       63
+#define MAX_SEQUENCE    15
 #define COMMAND_BUFF    100
 #define PATH_MAX        100
 
@@ -50,6 +51,8 @@ extern unsigned char
                 sem_espaco     ,
                 MARCADOR_INICIO; // 126 -> 0111.1110
 
+extern unsigned int now_sequence, last_sequence;
+
 struct envelope_packet {
     unsigned char MI;
     unsigned int tamanho : 6;
@@ -63,8 +66,12 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ packet something ================ */
-unsigned char* make_packet(int sequencia, int tipo, char* dados);
+unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados);
 int free_packet(unsigned char* packet);
+unsigned int sequencia(void);
+unsigned int get_seq(void);
+unsigned int get_lastseq(void);
+unsigned int next_seq(void);
 
 /* ================ packet getters ================ */
 char get_packet_MI(unsigned char* buffer);
