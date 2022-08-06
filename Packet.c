@@ -58,7 +58,6 @@ unsigned char* make_packet(int sequencia, int tipo, char* dados)
     unsigned char *packet   =   malloc(len_packet);                         // aloca mem pro pacote
     memset(packet, 0, len_packet);                                          // limpa lixo na memoria alocada
     packet[len_packet] = '\0';                                              // redundante, pode ser removido
-    printf("tamanho pacote: %d", len_packet);
 
     // define informacao do header
     int size_dados = (len_dados+len_complemento==0)?1:len_dados+len_complemento;
@@ -193,7 +192,8 @@ int get_packet_parity(unsigned char* buffer){                               // c
 
 // retorna tamanho de todo o pacote em bytes
 int get_packet_len(unsigned char* buffer){  // conta quantos bytes tem antes do \0 (excluindo o \0)
-    return strlen((char*)buffer);        // final de string em c sempre acaba em \0
+    // return strlen((char*)buffer);        // final de string em c sempre acaba em \0
+    return TAM_PACOTE;
 };
 
 // retorna sessao tipo do pacote como string (char *)

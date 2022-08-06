@@ -13,6 +13,13 @@ int main()
     
     // abre o socket -> lo vira ifconfig to pc que recebe
     soquete = ConexaoRawSocket("lo");
+
+    struct timeval tv;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+
     /* gera loop no send/recv quando client acaba
         todo: corrigir 
     */

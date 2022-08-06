@@ -9,7 +9,7 @@
 
 // VAR GLOBAL //
 
-#define TAM_PACOTE      68
+#define TAM_PACOTE      67
 #define LIMITE_DADOS    63
 #define LIMITE_SEQ      15
 #define COMMAND_BUFF    100
@@ -59,19 +59,6 @@ struct envelope_packet {
 
 typedef struct envelope_packet envelope_packet;
 
-
-typedef struct our_packet{
-
-    char MI;    /* 0111.1110 -> ASCII -> '~' = 126 */
-    unsigned int tamanho : 6;
-    unsigned int sequencia : 4;
-    unsigned int tipo : 6;
-    /* TODO - data (0-63 bytes) */
-    void *data;
-    char *complemento;
-    char paridade;
-
-} our_packet;
 
 // PROTOTIPOS //
 

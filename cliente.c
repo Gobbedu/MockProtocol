@@ -5,20 +5,91 @@
 
 // todos no cliente podem ver a conexao socket
 int soquete;
+int sequencia_cliente, sequencia_servidor, lastseq_cliente, lastseq_servidor;
 
+int seq_cli(void){
+    lastseq_cliente = sequencia_cliente;
+    sequencia_cliente = (sequencia_cliente+1)%LIMITE_SEQ;
+    return sequencia_cliente;
+}
 
-void cds(void)
-{
+void cds(char *comando){
     /* errno: 
         A - No such file or directory : 2
         B - Permission denied : ? 
     */
+    int bytes, timeout, seq, ok;
+    unsigned char resposta[TAM_PACOTE];
+
+    /* filtra pacote, envia somente parametro do cd */
+    comando += 3;                       // remove "cds"
+    comando += strspn(comando, " ");    // remove ' '  no inicio do comando
+
+    /* cria pacote com parametro para cd no server */
+    unsigned char *packet = make_packet(seq_cli(), OK, comando);
+    if(!packet)
+        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+
+    // read_packet(packet);
+
+    timeout = ok = 0;
+    // exit if ok received or 3 timeouts
+    while(!ok && timeout<3){ 
+
+        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes < 0){                                      // pega erros, se algum
+            printf("error: %s\n", strerror(errno));  
+        }
+        printf("%d bytes enviados no socket %d\n", bytes, soquete);
+        // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
+
+        /* said do loop soh se server responde ok */
+        while(1)
+        {   printf(".");
+            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
+            // if(errno == EAGAIN)    // nao tem oq ler
+            if(errno != 0)
+            {
+                printf("\nrecv error : %s; errno: %d\n", strerror(errno), errno);
+                timeout++;
+                break;
+            }
+
+            seq = get_packet_sequence(resposta);
+            if( bytes>0 && 
+                is_our_packet((unsigned char *)resposta) && 
+                sequencia_cliente != seq  
+            ){
+                switch (get_packet_type(resposta))
+                {
+                case OK:
+                    ok = 1;  
+                    printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
+                    printf("mensagem: %s\n", get_packet_data(resposta));
+                    printf("DEU CERTO ?!!!!\n");    
+                    return;
+
+                case NACK:
+                    break;  // exit response loop & re-send 
+
+                case ERRO:
+                    printf("deu algum erro, qual deles tem q ver no pacote da resposta\n");
+                    return;
+                }
+            }  
+        }
+    }
+
+    if(!(timeout<3))
+        printf("Erro de comunicacao, servidor nao responde :(\n");
+    if(ok)
+        printf("Comando CD aceito no server\n");
 }
 
+
+
 void testes(void){
-    double time;
     int bytes, seq;
-    clock_t start, end;
     unsigned char buffer[TAM_PACOTE];
     unsigned char *packet = make_packet(0, OK, NULL);
     if(!packet){
@@ -26,34 +97,23 @@ void testes(void){
         exit(0);
     }
 
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 100;
-    int min = 3;
-    setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
-    setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
-    setsockopt(soquete, SOL_SOCKET, SO_RCVLOWAT, &min, sizeof(int));
-    setsockopt(soquete, SOL_SOCKET, SO_SNDLOWAT, &min, sizeof(int));
-
     bytes = send(soquete, packet, strlen((char *)packet), 0);           // envia packet para o socket
     if(bytes<0)                                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));  
     printf("%d bytes enviados no socket %d\n", bytes, soquete);
 
-
-    start = clock();
+    int num_ruim = 0;
     while(1){
         // sniff sniff, recebeu pacote nosso?
-        bytes = recv(soquete, buffer, TAM_PACOTE, MSG_PEEK);
-        if( bytes < 0)
-            printf("\nrecv peek : %s\n", strerror(errno));
+        bytes = recv(soquete, buffer, TAM_PACOTE, 0);
+        if( bytes < 0){
+            printf("recv peek : %s\n", strerror(errno));
+            num_ruim++;
+        }
 
+        // printf("%d\n", num_ruim);
         if(bytes>0 && is_our_packet((unsigned char *)buffer))
         {
-            bytes = recv(soquete, buffer, TAM_PACOTE, 0);
-            if(bytes < 0)
-                printf("\nrecv 0 :%s\n", strerror(errno));
-
             seq = get_packet_sequence(buffer);
             printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
             if(seq != 0){
@@ -61,15 +121,13 @@ void testes(void){
                 break;
             }
         }   
-        
-        // se demoro timeout!
-        end = clock();
-        time = ((double) (end - start)) / CLOCKS_PER_SEC;
-        printf("\rtime: %10f", time);
-        if(time >= 0.1){
-            printf("\nTIMEOUT!\n");
+
+        if(num_ruim>3)
+        {
+            printf("TIMEOUT!\n");
             break;
         }
+    
     }
     return;  
 }
@@ -78,10 +136,20 @@ void testes(void){
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
-    soquete = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
 
-    testes();
-    while(0){
+    lastseq_cliente = 0;
+    sequencia_cliente = 0;
+    soquete = ConexaoRawSocket("lo");        // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("enp1s0f1");     // abre o socket -> lo vira ifconfig to pc que manda
+
+    struct timeval tv;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+
+    // testes();
+    while(1){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
 
@@ -108,6 +176,7 @@ void client_switch(char* comando){
         if(ret == -1)
             printf("ERRO\n");
     }
+
     else if(strncmp(comando, "cdc", 3) == 0){
         parametro = comando+3;                          // remove "cdc"
         printf("num of _ after cdc: %ld\n", strspn(parametro, " "));
@@ -122,7 +191,7 @@ void client_switch(char* comando){
             printf("ERRO\n");
     }
     else if(strncmp(comando, "cds", 3) == 0){
-        gera_pedido(parametro, CD);
+        cds(comando);
     }
     else if(strncmp(comando, "lss", 3) == 0){   
         gera_pedido(parametro, LS);
