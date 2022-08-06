@@ -12,9 +12,9 @@ int main()
 {
     int bytes, seq;
     unsigned char buffer[TAM_PACOTE];                   // buffer tem no maximo 68 bytes
-    sequencia_cliente = 0;
+    sequencia_servidor = 0;
     // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("eno1");
+    soquete = ConexaoRawSocket("lo");
     /* gera loop no send/recv quando client acaba
         todo: corrigir 
     */
@@ -47,11 +47,12 @@ void server_switch(unsigned char* buffer)
 	switch (tipo_lido)
 	{
         case OK:
-            resposta = make_packet(sequencia_cliente, OK, NULL);
+            resposta = make_packet(sequencia_servidor, OK, NULL);
             if(!resposta){
                 fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
                 exit(0);
             }
+            sequencia_servidor++;
             // read_packet(resposta);
             bytes = send(soquete, resposta, strlen((char *)resposta), 0);           // envia packet para o socket
             if(bytes<0)                                                         // pega erros, se algum
@@ -86,10 +87,11 @@ void server_switch(unsigned char* buffer)
                 resultado = OK;
             }
             int bytes;
-            unsigned char* packet = make_packet(0, resultado, (char *)flag);
+            unsigned char* packet = make_packet(sequencia_servidor, resultado, (char *)flag);
             if(!packet) // se pacote deu errado
                 return;
 
+            sequencia_servidor++;
             // len of packet must be strlen(), sizeof doesnt work
             bytes = send(soquete, packet, strlen((char *)packet), 0);          // envia packet para o socket
             if(bytes<0)                                                     // pega erros, se algum
