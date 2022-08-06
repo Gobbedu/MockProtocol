@@ -10,7 +10,9 @@ int main()
     int bytes;
     unsigned char buffer[TAM_PACOTE];                   // buffer tem no maximo 68 bytes
     // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("lo");
+    // soquete = ConexaoRawSocket("lo");
+    soquete = ConexaoRawSocket("enp2s0f1");
+
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -20,7 +22,7 @@ int main()
 
     while(1){
         bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
-        if(bytes>0 && is_our_packet(buffer) && get_packet_sequence(buffer) == get_seq())
+        if(bytes>0 && is_our_packet(buffer))
         {   // processa pacote se eh nosso pacote
             buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
             read_packet(buffer);
@@ -40,17 +42,7 @@ void server_switch(unsigned char* buffer)
 	switch (tipo_lido)
 	{
         case OK:
-            resposta = make_packet(sequencia(), OK, NULL);
-            if(!resposta){
-                fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
-                exit(0);
-            }
-            // read_packet(resposta);
-            bytes = send(soquete, resposta, TAM_PACOTE, 0);           // envia packet para o socket
-            if(bytes<0)                                                         // pega erros, se algum
-                printf("error: %s\n", strerror(errno));  
-            recv(soquete, resposta, TAM_PACOTE, 0); // remove do queue
-            free_packet(resposta);
+            // funcao q redireciona
             break;
         case NACK:
             // funcao q redireciona
@@ -129,11 +121,10 @@ void cdc(unsigned char* buffer){
     else{
         resultado = OK;
     }
-    resposta = make_packet(sequencia(), resultado, flag);
+    resposta = make_packet(sequencia(), resultado, flag, 1);
     if(!resposta) // se pacote deu errado
         return;
 
-    // len of packet must be strlen(), sizeof doesnt work
     bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
     if(bytes<0)                                                     // pega erros, se algum
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
@@ -148,23 +139,24 @@ void mkdirc(unsigned char* buffer){
     int resultado;
     unsigned char *resposta;
     char flag[1];
-    // char *mkdir, *dir;
+    char *mkdir, *dir;
     int bytes;
     int ret;
 
-    // dir = (char *) get_packet_data(buffer);
-    // char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
-    // strncpy(d, dir, strcspn(dir, " "));
-    // mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
-    // strcat(strcpy(mkdir, "mkdir "), d);
-    // free(d);
-    ret = system(get_packet_data(buffer));
+    dir = (char *) get_packet_data(buffer);
+    char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    strncpy(d, dir, strcspn(dir, " "));
+    mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
+    strcat(strcpy(mkdir, "mkdir "), d);
+    free(d);
+    ret = system(mkdir);
+    // ret = system(get_packet_data(buffer));
 
-    if(ret == -1){
+    if(ret != 0){        // 256 : erro q retorna se dir ja existe
         resultado = ERRO;
         printf("erro foi : %s\n", strerror(errno));
         switch (errno){
-            case 1:
+            case 256:
                 /* 1 = Operação não permitida */
                 flag[0] = dir_ja_E;
                 break;
@@ -178,11 +170,10 @@ void mkdirc(unsigned char* buffer){
     else{
         resultado = OK;
     }
-    resposta = make_packet(sequencia(), resultado, flag);
+    resposta = make_packet(sequencia(), resultado, flag, 1);
     if(!resposta) // se pacote deu errado
         return;
 
-    // len of packet must be strlen(), sizeof doesnt work
     bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
     if(bytes<0)                                                     // pega erros, se algum
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro

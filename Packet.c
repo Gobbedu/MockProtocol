@@ -25,15 +25,13 @@ unsigned int last_sequence = 0;
 /* ============================== PACKET FUNCTIONS ============================== */
 
 // cria e seta pacote inteiro do zero, retorna nullo se houve ERRO
-unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados)
+unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados)
 {
     // VALIDA //
-    int len_dados = 0;
     if(dados)
     {   // se existe dados
-        len_dados = strlen(dados);     // nao precisa contar o \0
-        if(len_dados > MAX_DADOS){
-            printf("ERRO: tamanho da mensagem excede limite de dados do pacote: %d\n", len_dados);
+        if(bytes_dados > MAX_DADOS){
+            printf("ERRO: tamanho da mensagem excede limite de dados do pacote: %d\n", bytes_dados);
             return NULL;
         }
     }
@@ -50,21 +48,21 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados)
 
     // CRIA PACOTE //
     int len_complemento = 0;
-    if(len_dados < MAX_DADOS)                      // adicionar complemento se dados  3       10        1
-        len_complemento = MAX_DADOS - len_dados;   // se pacote ficar menor que 14 (header + dados + paridade)
+    if(bytes_dados < MAX_DADOS)                      // adicionar complemento se dados  3       10        1
+        len_complemento = MAX_DADOS - bytes_dados;   // se pacote ficar menor que 14 (header + dados + paridade)
 
     // aloca memoria para o pacote
     int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
-    int len_packet          =   (len_header+len_dados+len_complemento+1);   // header + dados + 1 -> 1 para paridade dos dados
+    int len_packet          =   (len_header+bytes_dados+len_complemento+1);   // header + dados + 1 -> 1 para paridade dos dados
     unsigned char *packet   =   malloc(len_packet);                         // aloca mem pro pacote
     memset(packet, 0, len_packet);                                          // limpa lixo na memoria alocada
     packet[len_packet] = '\0';                                              // redundante, pode ser removido
 
     // define informacao do header
-    int size_dados = (len_dados+len_complemento==0)?1:len_dados+len_complemento;
+    int size_dados = (bytes_dados+len_complemento==0)?1:bytes_dados+len_complemento;
     envelope_packet header_t;
     header_t.MI         = MARCADOR_INICIO;  // 0111.1110 -> Marcador de Inicio
-    header_t.tamanho    = size_dados;       // se nao tem dados, substitui 0 ('\0') por 1, evita strlen crash
+    header_t.tamanho    = bytes_dados;       // se nao tem dados, substitui 0 ('\0') por 1, evita strlen crash
     header_t.sequencia  = sequencia;
     header_t.tipo       = tipo;
 
@@ -77,14 +75,14 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados)
     packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
 
     // copia dados na sessao dados, excluindo o \0 de 'data'
-    for(int i = 0; i < len_dados; i++){     // nao inclui ultimo byte \0, reescreve paridade
+    for(int i = 0; i < bytes_dados; i++){     // nao inclui ultimo byte \0, reescreve paridade
         packet[len_header+i] = dados[i];    // salva 'data' no pacote 
         packet[len_packet-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)
     }
 
     // caso exista complemento, preenche packet
     char fill = ' ';
-    for(int i = len_header+len_dados; i < len_packet-1; i++){   // a partir de onde dados parou
+    for(int i = len_header+bytes_dados; i < len_packet-1; i++){   // a partir de onde dados parou
         packet[i] = fill;                                       // ate penultimo byte do packet
         packet[len_packet-1] ^= fill;
     }
@@ -201,12 +199,17 @@ int get_packet_type(unsigned char* buffer){
 
 // retorna sessao dados do pacote como string
 char* get_packet_data(unsigned char* buffer){               // empurra ponteiro
-    return (char*)(buffer + sizeof(envelope_packet));       // depois do header comeca os dados do pacote
+    // return (char*)(buffer + sizeof(envelope_packet));       // depois do header comeca os dados do pacote
+    int size = get_packet_tamanho(buffer);
+    char *data = malloc(size*sizeof(char));
+    strncpy(data, (char *)(buffer+sizeof(envelope_packet)), size);
+    data[size] = '\0';
+    return data;
 }
 
 // retorna sessao de paridade do pacote
-int get_packet_parity(unsigned char* buffer){                               // comeca a contar do zero, nn precisa de + 1
-    return buffer[sizeof(envelope_packet) + get_packet_tamanho(buffer)];    // ultima posicao do buffer len(header) + len(dados)
+int get_packet_parity(unsigned char* buffer){   // comeca a contar do zero, nn precisa de + 1
+    return buffer[TAM_PACOTE-1];                // ultima posicao do buffer len(header) + len(dados)
 }
 
 // retorna tamanho de todo o pacote em bytes

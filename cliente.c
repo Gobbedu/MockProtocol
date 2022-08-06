@@ -2,15 +2,15 @@
 #include "cliente.h"
 #include "Packet.h"
 
-// todos no cliente podem ver a conexao socket
+// todos no cliente podem ver, mas servidor nao
 int soquete;
 
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    soquete = ConexaoRawSocket("lo");        // abre o socket -> lo vira ifconfig to pc que manda
-    // soquete = ConexaoRawSocket("enp1s0f1");     // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("lo");        // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("enp1s0f1");     // abre o socket -> lo vira ifconfig to pc que manda
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -74,7 +74,10 @@ void client_switch(char* comando){
     }
     else if(strncmp(comando, "mkdirs", 6) == 0)
     {   // mkdir usa syscall, pode ter espacos
-        comando[5] = ' ';                   // "mkdirs_[...]" -> "mkdir__[...]" 
+        // comando[5] = ' ';                   // "mkdirs_[...]" -> "mkdir__[...]" 
+        comando += 6;
+        comando += strspn(comando, " ");
+
         if(cliente_sinaliza(comando, MKDIR))
             printf("criou diretorio no servidor com sucesso!\n");
         else
@@ -117,7 +120,7 @@ int cliente_sinaliza(char *comando, int tipo)
 
     seq = sequencia();
     /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(seq, tipo, comando);
+    unsigned char *packet = make_packet(seq, tipo, comando, strlen(comando));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -151,8 +154,8 @@ int cliente_sinaliza(char *comando, int tipo)
             }
 
             if( bytes>0 && 
-                is_our_packet((unsigned char *)resposta) && 
-                get_packet_sequence(resposta) == next_seq()
+                is_our_packet((unsigned char *)resposta) 
+                && get_packet_sequence(resposta) == get_seq()
             ){
                 switch (get_packet_type(resposta))
                 {
@@ -165,10 +168,10 @@ int cliente_sinaliza(char *comando, int tipo)
                         break;  // exit response loop & re-send 
 
                     case ERRO:
-                        printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
+                        printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), get_packet_data(resposta));
                         return false;
                 }
-            }  
+            }
         }
     }
 
@@ -194,7 +197,7 @@ void cds(char *comando){
     comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(sequencia(), CD, comando);
+    unsigned char *packet = make_packet(sequencia(), CD, comando, strlen(comando));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -245,7 +248,7 @@ void cds(char *comando){
                         break;  // exit response loop & re-send 
 
                     case ERRO:
-                        printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
+                        printf("erro: servidor respondeu %c\n", get_packet_data(resposta)[0]);
                         return;
                 }
             }  
@@ -269,7 +272,7 @@ void get(char *comando){
     comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para get no server */
-    unsigned char *packet = make_packet(sequencia(), GET, comando);
+    unsigned char *packet = make_packet(sequencia(), GET, comando, strlen(comando));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -334,7 +337,7 @@ void mkdirs(char *comando){
     // comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para mkdir no server */
-    unsigned char *packet = make_packet(sequencia(), MKDIR, comando);
+    unsigned char *packet = make_packet(sequencia(), MKDIR, comando, strlen(comando));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -397,3 +400,6 @@ void mkdirs(char *comando){
     if(ok)
         printf("Comando MKDIR aceito no server\n");
 }
+
+
+

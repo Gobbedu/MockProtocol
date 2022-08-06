@@ -66,7 +66,7 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ packet something ================ */
-unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados);
+unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
 int free_packet(unsigned char* packet);
 unsigned int sequencia(void);
 unsigned int get_seq(void);
