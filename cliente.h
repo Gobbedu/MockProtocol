@@ -13,5 +13,6 @@ void client_switch(char* comando);
 void gera_pedido(char * dados, int tipo);
 void cds(char *comando);
 void get(char *comando);
+void mkdirs(char *comando);
 
 #endif

@@ -73,7 +73,7 @@ void server_switch(unsigned char* buffer)
             // funcao q redireciona
             break;
         case MKDIR:
-            // funcao q redireciona
+            mkdirc(buffer);
             break;
         case GET:
             // funcao q redireciona
@@ -154,5 +154,50 @@ void cdc(unsigned char* buffer){
 // trata_tipos: case switch p/ cada ENUM uma funcao
 // Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
+void mkdirc(unsigned char* buffer){
+    int resultado;
+    unsigned char *resposta;
+    char *dir, flag[1];
+    char *mkdir;
+    int bytes;
+    int ret;
 
+    dir = (char *) get_packet_data(buffer);
+    char *d = malloc(strcspn(dir, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    strncpy(d, dir, strcspn(dir, " "));
+    mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
+    strcat(strcpy(mkdir, "mkdir "), d);
+    // d deve ter mkdir diretorio
+    ret = system(mkdir);
 
+    free(d);
+    if(ret == -1){
+        resultado = ERRO;
+        printf("erro foi : %s\n", strerror(errno));
+        switch (errno){
+            case 1:
+                /* 1 = Operação não permitida */
+                flag[0] = dir_ja_E;
+                break;
+            case 13:
+                flag[0] = sem_permissao;
+                break;
+            default:
+                break;
+        };
+    }
+    else{
+        resultado = OK;
+    }
+    resposta = make_packet(sequencia_servidor, resultado, flag);
+    if(!resposta) // se pacote deu errado
+        return;
+
+    sequencia_servidor++;
+    // len of packet must be strlen(), sizeof doesnt work
+    bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
+    if(bytes<0)                                                     // pega erros, se algum
+        printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+
+    free(resposta);
+}
