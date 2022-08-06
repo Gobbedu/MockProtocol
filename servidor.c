@@ -5,12 +5,14 @@
 // global para servidor
 int last_seq;
 int soquete;
+int sequencia_servidor;
+int sequencia_cliente;
 /* sniff sniff */
 int main()
 {
     int bytes, seq;
     unsigned char buffer[TAM_PACOTE];                   // buffer tem no maximo 68 bytes
-    
+    sequencia_servidor = 0;
     // abre o socket -> lo vira ifconfig to pc que recebe
     soquete = ConexaoRawSocket("lo");
 
@@ -29,10 +31,7 @@ int main()
         {   // processa pacote se eh nosso pacote
             buffer[bytes]=(buffer[bytes]==69)?0:buffer[bytes];      // WORKAROUND remove append 'E' do recv/send
             seq = get_packet_sequence(buffer);
-            if( seq != last_seq){
-                read_packet(buffer);
-                last_seq = seq;
-            }
+            read_packet(buffer);
             server_switch(buffer);
         }
     }
@@ -45,22 +44,26 @@ int main()
 
 void server_switch(unsigned char* buffer)
 {
+    int resultado;
     unsigned char *resposta;
+    char *cd, flag[1];
     int bytes, tipo_lido = get_packet_type(buffer);
+    int ret;
 
 	switch (tipo_lido)
 	{
         case OK:
-            resposta = make_packet(1, OK, NULL);
+            resposta = make_packet(sequencia_servidor, OK, NULL);
             if(!resposta){
                 fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
                 exit(0);
             }
+            sequencia_servidor++;
             // read_packet(resposta);
-            bytes = send(soquete, resposta, strlen((char *)resposta), 0);           // envia packet para o socket
+            bytes = send(soquete, resposta, TAM_PACOTE, 0);           // envia packet para o socket
             if(bytes<0)                                                         // pega erros, se algum
                 printf("error: %s\n", strerror(errno));  
-            recv(soquete, resposta, strlen((char *)resposta), 0); // remove do queue
+            recv(soquete, resposta, TAM_PACOTE, 0); // remove do queue
             free_packet(resposta);
             break;
         case NACK:
@@ -70,7 +73,48 @@ void server_switch(unsigned char* buffer)
             // funcao q redireciona
             break;
         case CD:
-            // funcao q redireciona
+            cd = (char *) get_packet_data(buffer);
+            // ret = chdir((cd+strspn(cd, " ")));
+            char *d = malloc(strcspn(cd, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+            char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
+            strncpy(d, cd, strcspn(cd, " "));
+
+            if(getcwd(pwd, sizeof(pwd)))printf("before: %s\n", pwd);
+            ret = chdir(d);
+            if(getcwd(pwd, sizeof(pwd)))printf("after: %s\n", pwd);
+
+            free(d);
+            if(ret == -1){
+                resultado = ERRO;
+                printf("erro foi : %s\n", strerror(errno));
+                switch (errno){
+                    case 2:
+                        printf("here\n");
+                        flag[0] = dir_nn_E;
+                        break;
+                    case 13:
+                        flag[0] = sem_permissao;
+                        break;
+                    default:
+                        break;
+                };
+            }
+            else{
+                resultado = OK;
+            }
+            int bytes;
+            resposta = make_packet(sequencia_servidor, resultado, flag);
+            if(!resposta) // se pacote deu errado
+                return;
+
+            sequencia_servidor++;
+            // len of packet must be strlen(), sizeof doesnt work
+            bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
+            if(bytes<0)                                                     // pega erros, se algum
+                printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+
+            free(resposta);
+
             break;
         case LS:
             // funcao q redireciona

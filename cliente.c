@@ -18,7 +18,7 @@ void cds(char *comando){
         A - No such file or directory : 2
         B - Permission denied : ? 
     */
-    int bytes, timeout, seq, ok;
+    int bytes, timeout, seq, ok, lost_conn;
     unsigned char resposta[TAM_PACOTE];
 
     /* filtra pacote, envia somente parametro do cd */
@@ -26,15 +26,15 @@ void cds(char *comando){
     comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(seq_cli(), OK, comando);
+    unsigned char *packet = make_packet(seq_cli(), CD, comando);
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
     // read_packet(packet);
 
-    timeout = ok = 0;
+    timeout = ok = lost_conn = 0;
     // exit if ok received or 3 timeouts
-    while(!ok && timeout<3){ 
+    while(!ok && lost_conn<3){ 
 
         bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
         if(bytes < 0){                                      // pega erros, se algum
@@ -44,15 +44,19 @@ void cds(char *comando){
         // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
 
         /* said do loop soh se server responde ok */
+        timeout = 0;
         while(1)
-        {   printf(".");
+        {   
+            if(timeout == 3){
+                lost_conn++;
+                break;
+            }
             bytes = recv(soquete, resposta, TAM_PACOTE, 0);
             // if(errno == EAGAIN)    // nao tem oq ler
-            if(errno != 0)
+            if(errno)
             {
-                printf("\nrecv error : %s; errno: %d\n", strerror(errno), errno);
+                printf("recv error : %s; errno: %d\n", strerror(errno), errno);
                 timeout++;
-                break;
             }
 
             seq = get_packet_sequence(resposta);
@@ -73,7 +77,7 @@ void cds(char *comando){
                     break;  // exit response loop & re-send 
 
                 case ERRO:
-                    printf("deu algum erro, qual deles tem q ver no pacote da resposta\n");
+                    printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
                     return;
                 }
             }  
@@ -91,7 +95,7 @@ void cds(char *comando){
 void testes(void){
     int bytes, seq;
     unsigned char buffer[TAM_PACOTE];
-    unsigned char *packet = make_packet(0, OK, NULL);
+    unsigned char *packet = make_packet(0, CD, "..");
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         exit(0);
@@ -110,12 +114,11 @@ void testes(void){
             printf("recv peek : %s\n", strerror(errno));
             num_ruim++;
         }
-
         // printf("%d\n", num_ruim);
         if(bytes>0 && is_our_packet((unsigned char *)buffer))
         {
             seq = get_packet_sequence(buffer);
-            printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
+            printf("TIPO: %s com dado: %s \n", get_type_packet(buffer), get_packet_data(buffer));
             if(seq != 0){
                 printf("DEU CERTO!!!!\n");      
                 break;
@@ -169,57 +172,63 @@ void client_switch(char* comando){
     char *parametro = comando;      // = comando pro make nn reclama, dpois tiro
     comando[strcspn(comando, "\n")] = 0;                // remove new line
 
-
-	if(strncmp(comando, "lsc", 3) == 0){
+	if(strncmp(comando, "lsc", 3) == 0)
+    {
         comando[2] = ' ';                               // remove 'c' : lsc -> ls_
         ret = system(comando);
         if(ret == -1)
             printf("ERRO\n");
     }
+    else if(strcmp(comando, "teste") == 0 ){testes();}
 
-    else if(strncmp(comando, "cdc", 3) == 0){
+    else if(strncmp(comando, "cdc", 3) == 0)
+    {
         parametro = comando+3;                          // remove "cdc"
-        printf("num of _ after cdc: %ld\n", strspn(parametro, " "));
         ret = chdir((parametro+strspn(parametro, " ")));
         if(ret == -1)
             printf("ERRO: %s, errno: %d  parametro: (%s)\n", strerror(errno), errno, parametro);
     }
-    else if(strncmp(comando, "mkdirc", 6) == 0){
+    else if(strncmp(comando, "mkdirc", 6) == 0)
+    {
         comando[5] = ' ';                               // remove 'c' : mkdirc_[]-> mkdir__[]
         ret = system(comando);
         if(ret == -1)
             printf("ERRO\n");
     }
-    else if(strncmp(comando, "cds", 3) == 0){
+    else if(strncmp(comando, "cds", 3) == 0)
+    {
         cds(comando);
     }
-    else if(strncmp(comando, "lss", 3) == 0){   
+    else if(strncmp(comando, "lss", 3) == 0)
+    {   
         gera_pedido(parametro, LS);
     }
-    else if(strncmp(comando, "mkdirs", 6) == 0){
+    else if(strncmp(comando, "mkdirs", 6) == 0)
+    {
         gera_pedido(parametro, MKDIR);
     }
-    else if (strncmp(comando, "get", 3) == 0){
+    else if (strncmp(comando, "get", 3) == 0)
+    {
         gera_pedido(parametro, GET);
         // fazendo função para tratar o get
         // get();
     }
-    else if (strncmp(comando, "put", 3) == 0){
+    else if (strncmp(comando, "put", 3) == 0)
+    {
         gera_pedido(parametro, PUT);
     }
-
-    else if(strncmp(comando, "exit", 4) == 0){      // sair com estilo
+    else if(strncmp(comando, "exit", 4) == 0)
+    {      // sair com estilo
         printf(RED "CLIENT TERMINATED\n" RESET);      
         exit(0);
     }
-    else{
+    else
+    {
         if(comando[0] != 0)     // diferente de um enter
             printf("comando invalido: %s\n", comando);
     }
 }
 void gera_pedido(char * dados, int tipo){
-}
-/*
     // char *complemento = (char*)malloc(64-sizeof(dados));
     // memset(complemento, '0', sizeof(complemento));
 
@@ -240,6 +249,7 @@ void gera_pedido(char * dados, int tipo){
     free(packet);
 }
 
+/*
 // função para tratar o get
 void get(){
     unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
