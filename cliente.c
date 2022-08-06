@@ -13,84 +13,6 @@ int seq_cli(void){
     return sequencia_cliente;
 }
 
-void cds(char *comando){
-    /* errno: 
-        A - No such file or directory : 2
-        B - Permission denied : ? 
-    */
-    int bytes, timeout, seq, ok, lost_conn;
-    unsigned char resposta[TAM_PACOTE];
-
-    /* filtra pacote, envia somente parametro do cd */
-    comando += 3;                       // remove "cds"
-    comando += strspn(comando, " ");    // remove ' '  no inicio do comando
-
-    /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(seq_cli(), CD, comando);
-    if(!packet)
-        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
-
-    // read_packet(packet);
-
-    timeout = ok = lost_conn = 0;
-    // exit if ok received or 3 timeouts
-    while(!ok && lost_conn<3){ 
-
-        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes < 0){                                      // pega erros, se algum
-            printf("error: %s\n", strerror(errno));  
-        }
-        printf("%d bytes enviados no socket %d\n", bytes, soquete);
-        // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
-
-        /* said do loop soh se server responde ok */
-        timeout = 0;
-        while(1)
-        {   
-            if(timeout == 3){
-                lost_conn++;
-                break;
-            }
-            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
-            // if(errno == EAGAIN)    // nao tem oq ler
-            if(errno)
-            {
-                printf("recv error : %s; errno: %d\n", strerror(errno), errno);
-                timeout++;
-            }
-
-            seq = get_packet_sequence(resposta);
-            if( bytes>0 && 
-                is_our_packet((unsigned char *)resposta) && 
-                sequencia_cliente != seq  
-            ){
-                switch (get_packet_type(resposta))
-                {
-                case OK:
-                    ok = 1;  
-                    printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
-                    printf("mensagem: %s\n", get_packet_data(resposta));
-                    printf("DEU CERTO ?!!!!\n");    
-                    return;
-
-                case NACK:
-                    break;  // exit response loop & re-send 
-
-                case ERRO:
-                    printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
-                    return;
-                }
-            }  
-        }
-    }
-
-    if(!(timeout<3))
-        printf("Erro de comunicacao, servidor nao responde :(\n");
-    if(ok)
-        printf("Comando CD aceito no server\n");
-}
-
-
 
 void testes(void){
     int bytes, seq;
@@ -248,6 +170,86 @@ void gera_pedido(char * dados, int tipo){
     read_packet(packet);
     free(packet);
 }
+
+
+void cds(char *comando){
+    /* errno: 
+        A - No such file or directory : 2
+        B - Permission denied : ? 
+    */
+    int bytes, timeout, seq, ok, lost_conn;
+    unsigned char resposta[TAM_PACOTE];
+
+    /* filtra pacote, envia somente parametro do cd */
+    comando += 3;                       // remove "cds"
+    comando += strspn(comando, " ");    // remove ' '  no inicio do comando
+
+    /* cria pacote com parametro para cd no server */
+    unsigned char *packet = make_packet(seq_cli(), CD, comando);
+    if(!packet)
+        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+
+    // read_packet(packet);
+
+    timeout = ok = lost_conn = 0;
+    // exit if ok received or 3 timeouts
+    while(!ok && lost_conn<3){ 
+
+        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes < 0){                                      // pega erros, se algum
+            printf("error: %s\n", strerror(errno));  
+        }
+        printf("%d bytes enviados no socket %d\n", bytes, soquete);
+        // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
+
+        /* said do loop soh se server responde ok */
+        timeout = 0;
+        while(1)
+        {   
+            if(timeout == 3){
+                lost_conn++;
+                break;
+            }
+            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
+            // if(errno == EAGAIN)    // nao tem oq ler
+            if(errno)
+            {
+                printf("recv error : %s; errno: %d\n", strerror(errno), errno);
+                timeout++;
+            }
+
+            seq = get_packet_sequence(resposta);
+            if( bytes>0 && 
+                is_our_packet((unsigned char *)resposta) && 
+                sequencia_cliente != seq  
+            ){
+                switch (get_packet_type(resposta))
+                {
+                case OK:
+                    ok = 1;  
+                    printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
+                    printf("mensagem: %s\n", get_packet_data(resposta));
+                    printf("DEU CERTO ?!!!!\n");    
+                    return;
+
+                case NACK:
+                    break;  // exit response loop & re-send 
+
+                case ERRO:
+                    printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
+                    return;
+                }
+            }  
+        }
+    }
+
+    if(!(timeout<3))
+        printf("Erro de comunicacao, servidor nao responde :(\n");
+    if(ok)
+        printf("Comando CD aceito no server\n");
+}
+
+
 
 /*
 // função para tratar o get
