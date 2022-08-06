@@ -80,8 +80,8 @@ int main(){
     char comando[COMMAND_BUFF];
     soquete = ConexaoRawSocket("lo");  // abre o socket -> lo vira ifconfig to pc que manda
 
-    testes();
-    while(0){
+    // testes();
+    while(1){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
 
@@ -110,7 +110,6 @@ void client_switch(char* comando){
     }
     else if(strncmp(comando, "cdc", 3) == 0){
         parametro = comando+3;                          // remove "cdc"
-        printf("num of _ after cdc: %ld\n", strspn(parametro, " "));
         ret = chdir((parametro+strspn(parametro, " ")));
         if(ret == -1)
             printf("ERRO: %s, errno: %d  parametro: (%s)\n", strerror(errno), errno, parametro);
@@ -149,8 +148,6 @@ void client_switch(char* comando){
     }
 }
 void gera_pedido(char * dados, int tipo){
-}
-/*
     // char *complemento = (char*)malloc(64-sizeof(dados));
     // memset(complemento, '0', sizeof(complemento));
 
@@ -171,6 +168,7 @@ void gera_pedido(char * dados, int tipo){
     free(packet);
 }
 
+/*
 // função para tratar o get
 void get(){
     unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
