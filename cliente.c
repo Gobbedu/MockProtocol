@@ -202,19 +202,19 @@ void cds(char *comando){
             ){
                 switch (get_packet_type(resposta))
                 {
-                case OK:
-                    ok = 1;  
-                    printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
-                    printf("mensagem: %s\n", get_packet_data(resposta));
-                    printf("DEU CERTO ?!!!!\n");    
-                    return;
+                    case OK:
+                        ok = 1;  
+                        printf("SEQUENCIA: %d com %d bytes\n", seq, bytes);
+                        printf("mensagem: %s\n", get_packet_data(resposta));
+                        printf("DEU CERTO ?!!!!\n");    
+                        return;
 
-                case NACK:
-                    break;  // exit response loop & re-send 
+                    case NACK:
+                        break;  // exit response loop & re-send 
 
-                case ERRO:
-                    printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
-                    return;
+                    case ERRO:
+                        printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
+                        return;
                 }
             }  
         }
@@ -228,22 +228,63 @@ void cds(char *comando){
 
 // função para tratar o get
 void get(char *comando){
-    unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
-    int bytes;
 
-    bytes = recv(soquete, buffer, sizeof(buffer), 0);      // recebe dados do socket
-    // buffer[sizeof(buffer)] = '\0';                      // fim da string no buffer
+    int bytes, timeout, seq, fim, lost_conn;
+    unsigned char resposta[TAM_PACOTE];
 
-    if(bytes>0 && is_our_packet(buffer))
-    {   // processa pacote se eh nosso pacote
-        if(get_packet_type(buffer) == NACK){
+    /* filtra pacote, envia somente parametro do get */
+    comando += 3;                       // remove "get"
+    comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
+    /* cria pacote com parametro para get no server */
+    unsigned char *packet = make_packet(seq_cli(), GET, comando);
+    if(!packet)
+        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+
+    timeout = fim = lost_conn = 0;
+    // exit if fim received or 3 timeouts
+    while(!fim && lost_conn<3){ 
+        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes < 0){                                      // pega erros, se algum
+            printf("error: %s\n", strerror(errno));  
         }
-        else if(get_packet_type(buffer) == ERRO){
+        printf("%d bytes enviados no socket %d\n", bytes, soquete);
+        // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
 
-        }
-        else if(get_packet_type(buffer) == DESC_ARQ){
+        /* said do loop soh se server responde fim */
+        timeout = 0;
+        while(1)
+        {   
+            if(timeout == 3){
+                lost_conn++;
+                break;
+            }
+            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
+            // if(errno == EAGAIN)    // nao tem oq ler
+            if(errno)
+            {
+                printf("recv error : %s; errno: %d\n", strerror(errno), errno);
+                timeout++;
+            }
+            seq = get_packet_sequence(resposta);
+            if( bytes>0 && 
+                is_our_packet((unsigned char *)resposta) && 
+                sequencia_cliente != seq  
+            ){
+                switch (get_packet_type(resposta))
+                {
+                    case DESC_ARQ:
+                            // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        return;
 
+                    case NACK:
+                        break;  // exit response loop & re-send 
+
+                    case ERRO:
+                        printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
+                        return;
+                }
+            }
         }
     }
 }
