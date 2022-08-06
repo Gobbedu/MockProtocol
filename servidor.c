@@ -167,7 +167,6 @@ void mkdirc(unsigned char* buffer){
     strncpy(d, dir, strcspn(dir, " "));
     mkdir = calloc(1, sizeof("mkdir")+sizeof(d));
     strcat(strcpy(mkdir, "mkdir "), d);
-    // d deve ter mkdir diretorio
     ret = system(mkdir);
 
     free(d);

@@ -14,50 +14,6 @@ int seq_cli(void){
 }
 
 
-void testes(void){
-    int bytes, seq;
-    unsigned char buffer[TAM_PACOTE];
-    unsigned char *packet = make_packet(0, CD, "..");
-    if(!packet){
-        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
-        exit(0);
-    }
-
-    bytes = send(soquete, packet, strlen((char *)packet), 0);           // envia packet para o socket
-    if(bytes<0)                                                         // pega erros, se algum
-        printf("error: %s\n", strerror(errno));  
-    printf("%d bytes enviados no socket %d\n", bytes, soquete);
-
-    int num_ruim = 0;
-    while(1){
-        // sniff sniff, recebeu pacote nosso?
-        bytes = recv(soquete, buffer, TAM_PACOTE, 0);
-        if( bytes < 0){
-            printf("recv peek : %s\n", strerror(errno));
-            num_ruim++;
-        }
-        // printf("%d\n", num_ruim);
-        if(bytes>0 && is_our_packet((unsigned char *)buffer))
-        {
-            seq = get_packet_sequence(buffer);
-            printf("TIPO: %s com dado: %s \n", get_type_packet(buffer), get_packet_data(buffer));
-            if(seq != 0){
-                printf("DEU CERTO!!!!\n");      
-                break;
-            }
-        }   
-
-        if(num_ruim>3)
-        {
-            printf("TIMEOUT!\n");
-            break;
-        }
-    
-    }
-    return;  
-}
-
-
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
