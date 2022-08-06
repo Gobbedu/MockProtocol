@@ -123,21 +123,19 @@ void client_switch(char* comando){
     }
     else if(strncmp(comando, "lss", 3) == 0)
     {   
-        gera_pedido(parametro, LS);
+
     }
     else if(strncmp(comando, "mkdirs", 6) == 0)
     {
-        gera_pedido(parametro, MKDIR);
+        
     }
     else if (strncmp(comando, "get", 3) == 0)
     {
-        gera_pedido(parametro, GET);
-        // fazendo função para tratar o get
-        // get();
+        get(comando);
     }
     else if (strncmp(comando, "put", 3) == 0)
     {
-        gera_pedido(parametro, PUT);
+        
     }
     else if(strncmp(comando, "exit", 4) == 0)
     {      // sair com estilo
@@ -150,32 +148,11 @@ void client_switch(char* comando){
             printf("comando invalido: %s\n", comando);
     }
 }
-void gera_pedido(char * dados, int tipo){
-    // char *complemento = (char*)malloc(64-sizeof(dados));
-    // memset(complemento, '0', sizeof(complemento));
-
-    int bytes;
-
-    unsigned char* packet = make_packet(0, tipo, dados);
-    if(!packet) // se pacote deu errado
-        return;
-
-    // len of packet must be strlen(), sizeof doesnt work
-    bytes = send(soquete, packet, strlen((char *)packet), 0);          // envia packet para o socket
-    if(bytes<0)                                                     // pega erros, se algum
-        printf("error: %s\n", strerror(errno));                     // print detalhes do erro
-
-    printf("%d bytes enviados no socket %d\n", bytes, soquete);
-
-    read_packet(packet);
-    free(packet);
-}
-
 
 void cds(char *comando){
     /* errno: 
         A - No such file or directory : 2
-        B - Permission denied : ? 
+        B - Permission denied : 13
     */
     int bytes, timeout, seq, ok, lost_conn;
     unsigned char resposta[TAM_PACOTE];
@@ -249,9 +226,6 @@ void cds(char *comando){
         printf("Comando CD aceito no server\n");
 }
 
-
-
-/*
 // função para tratar o get
 void get(){
     unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
@@ -273,4 +247,3 @@ void get(){
         }
     }
 }
-*/
