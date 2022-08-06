@@ -68,7 +68,7 @@ void server_switch(unsigned char* buffer)
             mkdirc(buffer);
             break;
         case GET:
-            // funcao q redireciona
+            get(buffer);
             break;
         case PUT:
             // funcao q redireciona
@@ -188,4 +188,15 @@ void mkdirc(unsigned char* buffer){
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
     free(resposta);
+}
+
+void get(buffer){
+    int resultado;
+    unsigned char *resposta;
+    char *get, flag[1];
+    int bytes;
+    int ret;
+
+    get = (char *) get_packet_data(buffer);
+    
 }
