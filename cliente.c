@@ -227,7 +227,7 @@ void cds(char *comando){
 }
 
 // função para tratar o get
-void get(){
+void get(char *comando){
     unsigned char buffer[68];                   // buffer tem no maximo 68 bytes
     int bytes;
 
