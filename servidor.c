@@ -41,6 +41,7 @@ void server_switch(unsigned char* buffer)
     int resultado;
     unsigned char flag = '\0';
     unsigned char *resposta;
+    unsigned char *packet;
     int bytes, tipo_lido = get_packet_type(buffer);
     int ret;
 
@@ -67,7 +68,7 @@ void server_switch(unsigned char* buffer)
             // funcao q redireciona
             break;
         case CD:
-            unsigned char* packet = make_packet(sequencia_cliente, CD, NULL);
+            packet = make_packet(sequencia_cliente, CD, NULL);
             char *cd = get_packet_data(packet);
             ret = chdir((cd+strspn(cd, " ")));
             if(ret == -1){
