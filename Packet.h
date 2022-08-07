@@ -67,7 +67,10 @@ typedef struct envelope_packet envelope_packet;
 
 /* ================ packet something ================ */
 unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
+int calc_packet_parity(unsigned char *buffer);
 int free_packet(unsigned char* packet);
+
+// sequencializacao
 unsigned int sequencia(void);
 unsigned int get_seq(void);
 unsigned int get_lastseq(void);
