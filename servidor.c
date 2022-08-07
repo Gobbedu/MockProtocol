@@ -98,7 +98,7 @@ void cdc(unsigned char* buffer){
     if(getcwd(pwd, sizeof(pwd)))printf("after: %s\n", pwd);
 
     if(ret == -1){
-        printf("erro foi : %s\n", strerror(errno));
+        resultado = ERRO;
         switch (errno){
             case 2:
                 flag[0] = dir_nn_E;
@@ -110,6 +110,7 @@ void cdc(unsigned char* buffer){
                 flag[0] = '?';
                 break;
         };
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag[0]);
     }
     else{
         resultado = OK;
@@ -150,7 +151,7 @@ void mkdirc(unsigned char* buffer){
                 flag[0] = '?';
                 break;
         };
-        printf("erro %d foi : %s ; flag (%s)\n",errno, strerror(errno), flag);
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag[0]);
     }
     else{
         resultado = OK;
