@@ -1,6 +1,7 @@
 #include "servidor.h"
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
+#include <sys/stat.h>
 
 // global para servidor
 int soquete;
@@ -9,8 +10,8 @@ int main()
 {
     int bytes;
     unsigned char buffer[TAM_PACOTE];       // mensagem de tamanho constante
-    // soquete = ConexaoRawSocket("lo");
-    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    soquete = ConexaoRawSocket("lo");
+    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -169,12 +170,51 @@ void mkdirc(unsigned char* buffer){
 }
 
 void get(unsigned char *buffer){
-    // int resultado;
-    // unsigned char *resposta;
-    // char *get, flag[1];
-    // int bytes;
-    // int ret;
+    int bytes, resultado;
+    unsigned char *resposta;
+    char *get, *flag;
 
-    // get = (char *) get_packet_data(buffer);
+    get = get_packet_data(buffer);
     
+    // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    FILE *arquivo;
+
+    arquivo = fopen(get, "r");
+
+    if(arquivo == NULL){        
+        resultado = ERRO;
+        flag = (char*)malloc(sizeof(char));
+        switch (errno){       // errno da 11, que nao eh erro esperado
+            case 2:       // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = arq_nn_E;
+                break;
+            case 13*256:    // nunca acontece 
+                flag = sem_permissao;
+                break;
+            default:
+                flag = "?";
+                break;
+        };
+        printf("erro %d foi : %s ; flag (%s)\n",errno, strerror(errno), flag);
+    }
+    else{
+        resultado = DESC_ARQ;
+        stat(get, &st);
+        flag = calloc(10, sizeof(char));
+        sprintf(flag, "%ld", st.st_size);
+        printf("dado: %s\n", flag);
+    }
+
+    resposta = make_packet(sequencia(), resultado, flag, resultado);
+    if(!resposta) return;   // se pacote deu errado
+
+    bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
+    if(bytes<0)                                         // pega erros, se algum
+        printf("error: %s\n", strerror(errno));         // print detalhes do erro
+
+    free_packet(resposta);
+    free(get);
+    free(flag);
+
+    // FAZER AQUI A LOGICA DA JANELA DESLIZANTE
 }

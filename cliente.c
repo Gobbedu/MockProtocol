@@ -9,8 +9,8 @@ int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    // soquete = ConexaoRawSocket("lo");        // abre o socket -> lo vira ifconfig to pc que manda
-    soquete = ConexaoRawSocket("enp1s0f1");     // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("lo");        // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("enp1s0f1");     // abre o socket -> lo vira ifconfig to pc que manda
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -88,7 +88,7 @@ void client_switch(char* comando){
     }
     else if (strncmp(comando, "get", 3) == 0)
     {
-        get(comando);
+        get(comando, GET);
     }
     else if (strncmp(comando, "put", 3) == 0)
     {
@@ -185,17 +185,22 @@ int cliente_sinaliza(char *comando, int tipo)
 }
 
 // função para tratar o get
-void get(char *comando){
+void get(char *comando, int tipo){
 
-    int bytes, timeout, seq, fim, lost_conn;
+    int bytes, timeout, seq, fim, lost_conn, resultado;
     unsigned char resposta[TAM_PACOTE];
+    unsigned char *resposta_2;
+    char pwd[PATH_MAX], flag[1];
+    char* dado;
+    int tamanho = 0;
+    
 
     /* filtra pacote, envia somente parametro do get */
     comando += 3;                       // remove "get"
     comando += strspn(comando, " ");    // remove ' '  no inicio do comando
 
     /* cria pacote com parametro para get no server */
-    unsigned char *packet = make_packet(sequencia(), GET, comando, strlen(comando));
+    unsigned char *packet = make_packet(sequencia(), tipo, comando, strlen(comando));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -233,6 +238,52 @@ void get(char *comando){
                 {
                     case DESC_ARQ:
                             // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            dado = get_packet_data(resposta);
+                            // pegando o tamanho do arquivo, enviado pelo servidor
+                            tamanho = atoi(dado);
+                            // verificando o diretorio atual
+                            getcwd(pwd, sizeof(pwd));
+
+                            // montando um comando bash para indentificar o espaço livre em disco ---------------------------------------------
+                            char * comando = malloc(sizeof("df -hT ")+ sizeof(pwd)+sizeof(" | tail +2 | cut -d \" \" -f 14 >> livre.txt"));
+                            strcat(comando, "df -hT ");
+                            strcat(comando, pwd);
+                            strcat(comando, " | tail +2 | cut -d \" \" -f 14 >> livre.txt");
+                            system(comando);
+                            // -----------------------------------------------------------------------------------------------------------------
+
+                            FILE *livre = fopen("livre.txt", "r");
+                            char * tmp = malloc(sizeof(char));
+                            fscanf(livre, "%s", tmp);
+                            system("rm livre.txt");
+                            int t_tmp = strlen(tmp);
+                            tmp[t_tmp] = '\0';
+                            int e_livre = atoi(tmp); 
+
+                            // transformando o tamanho do arquivo de bytes para Gb
+                            tamanho /= 1024;
+                            tamanho /= 1024;
+                            tamanho /= 1024;
+
+                            // caso o tamanho do arquivo seja maior que espaço livre
+                            if(e_livre < tamanho){
+                                resultado = ERRO;
+                                flag[0] = sem_espaco;
+                                printf("Espaço insuficiente!\n");
+                            }
+                            else{
+                                resultado = OK;
+                            }
+                            resposta_2 = make_packet(sequencia(), resultado, flag, resultado == ERRO);
+                            if(!resposta_2) return;   // se pacote deu errado
+
+                            bytes = send(soquete, resposta_2, TAM_PACOTE, 0);                 // envia packet para o socket
+                            if(bytes<0)                                                     // pega erros, se algum
+                                printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+
+                            free(resposta_2);
+
+                            // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
                         return;
 
                     case NACK:
