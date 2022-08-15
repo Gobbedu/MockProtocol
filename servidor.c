@@ -2,15 +2,25 @@
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
 
+// - [] CHECAR FUNCAO check_packet, MUDA CALCULO DA PARIDADE int paradis = 1;
+// - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
+// - [] tratar da sequencia de mkdirc e cdc, caso algo de errado, senao sequencia nunca emparelha dnv
+// - [] tratar next_seq do cliente e do servidor, update quando aceita
+
 // global para servidor
 int soquete;
+int serv_seq = 0;   // current server sequence
+int nxts_cli = 0;   // expected next client sequence
+
+
 /* sniff sniff */
 int main()
 {
     int bytes;
-    unsigned char buffer[TAM_PACOTE];       // mensagem de tamanho constante
-    // soquete = ConexaoRawSocket("lo");
-    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    // int check;
+    unsigned char *resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
+    soquete = ConexaoRawSocket("lo");
+    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -20,13 +30,30 @@ int main()
 
     while(1){
         bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
-        if(bytes>0 && is_our_packet(buffer))
-        {   // processa pacote se eh nosso pacote
-            read_packet(buffer);
-            server_switch(buffer);
-        }
-    }
 
+        // VERIFICA //
+        if (bytes<=0) continue;                 // se erro ou vazio, ignora
+        if (!is_our_packet(buffer)) continue;   // se nao eh nosso pacote, ignora
+        if (!check_sequence((unsigned char*) buffer, nxts_cli)){
+            // sequencia diferente: ignora
+            printf("server expected %d but got %d as a sequence\n", nxts_cli, get_packet_sequence(buffer));
+            continue;
+        }
+        
+        // PROCESSA //
+        if (!check_parity(buffer)){             
+            // paridade diferente: NACK
+            resposta = make_packet(sequencia(), NACK, NULL, 0);
+            send(soquete, resposta, TAM_PACOTE, 0);  
+            continue;                                         
+        }
+
+        // tudo ok, redireciona comando
+        nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
+        read_packet(buffer);
+        server_switch(buffer);
+    }
+    
     close(soquete);
     printf("servidor terminado\n");
 }
@@ -87,7 +114,6 @@ void cdc(unsigned char* buffer){
     int resultado, bytes, ret;
     unsigned char *resposta;
     char *cd, flag[1];
-
     cd = (char *) get_packet_data(buffer);
     char *d = malloc(strcspn(cd, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
@@ -178,3 +204,23 @@ void get(unsigned char *buffer){
     // get = (char *) get_packet_data(buffer);
     
 }
+
+
+// atualiza e retorna proxima sequencia
+unsigned int sequencia(void)
+{
+    int now = serv_seq;
+    serv_seq = (serv_seq+1)%MAX_SEQUENCE;
+    return now;
+}
+
+
+// retorna sequencia passada do servidor (precisa?)
+// unsigned int get_lastseq(void){
+//     return (last_sequence-1);
+// }
+// proxima sequencia do cliente (precisa de funcao?)
+// unsigned int next_cli(int seq_cli){
+//     nxts_cli = (seq_cli+1)%MAX_SEQUENCE;
+//     return 
+// }

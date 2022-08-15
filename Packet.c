@@ -13,8 +13,6 @@ unsigned char   dir_nn_E        = 'A',
                 sem_espaco      = 'E',
                 MARCADOR_INICIO = '~';  // 126 -> 0111.1110
 
-unsigned int now_sequence = 0;
-unsigned int last_sequence = 0;
 
 /* ===== TODO ===== */
 // sequencializacao
@@ -50,13 +48,13 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int by
     // CRIA PACOTE //
     // aloca memoria para o pacote
     int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
-    unsigned char *packet   =   malloc(TAM_PACOTE);                         // aloca mem pro pacote
+    unsigned char *packet   =   malloc(TAM_PACOTE);                         // aloca mem pro pacote, retorna string
     memset(packet, 0, TAM_PACOTE);                                          // limpa lixo na memoria alocada
 
     // define informacao do header
     envelope_packet header_t;
-    header_t.MI         = MARCADOR_INICIO;  // 0111.1110 -> Marcador de Inicio
-    header_t.tamanho    = bytes_dados;       // se nao tem dados, substitui 0 ('\0') por 1, evita strlen crash
+    header_t.MI         = MARCADOR_INICIO;      // 0111.1110 -> Marcador de Inicio
+    header_t.tamanho    = bytes_dados;          // evita strlen para enviar bytes de arquivos
     header_t.sequencia  = sequencia;
     header_t.tipo       = tipo;
 
@@ -68,13 +66,12 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int by
     packet[1] = header[1];      // Tamanho + sequencia + tipo   = 2 bytes
     packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
 
-    // copia dados na sessao dados, excluindo o \0 de 'data'
-    for(int i = 0; i < bytes_dados; i++){   // nao inclui ultimo byte \0, reescreve paridade
+    for(int i = 0; i < bytes_dados; i++){   // calcula paridade somente dos dados
         packet[len_header+i] = dados[i];    // salva 'data' no pacote 
         packet[TAM_PACOTE-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)
     }
 
-    // caso exista complemento, preenche packet
+    // complemento nao entra na paridade
     char fill = ' ';
     for(int i = len_header+bytes_dados; i < TAM_PACOTE-1; i++)  // a partir de onde dados parou
         packet[i] = fill;                                       // ate penultimo byte do packet
@@ -90,23 +87,6 @@ int free_packet(unsigned char* packet)
     free(packet);
     return 1;
 }
-
-unsigned int sequencia(void)
-{
-    last_sequence = now_sequence;
-    now_sequence = (now_sequence+1)%MAX_SEQUENCE;
-    return now_sequence;
-}
-unsigned int get_seq(void){
-    return now_sequence;
-}
-unsigned int get_lastseq(void){
-    return last_sequence;
-}
-unsigned int next_seq(void){
-    return (now_sequence+1)%MAX_SEQUENCE;
-}
-
 
 /* =========================== FUNCOES AUXILIARES =========================== */
 
@@ -168,6 +148,26 @@ int calc_packet_parity(unsigned char *buffer)
         paradis ^= buffer[i];
 
     return paradis;    
+}
+
+int check_parity(unsigned char* buffer){
+    int paradis = 0;
+    int header = sizeof(envelope_packet);
+    int len = get_packet_tamanho(buffer) + header;
+
+    for(int i = header; i < len; i++)   // desde o inicio ate o final de dados (exclui fill)
+        paradis ^= buffer[i];
+
+    return paradis == get_packet_parity(buffer);
+}
+
+// se paridade nao bate, retorna falso, c.c. verdadeiro
+int check_sequence(unsigned char *buffer, int expected_seq)
+{
+    if(expected_seq == get_packet_sequence(buffer))
+        return true;
+
+    return false;  
 }
 /* ============================== PACKET GETTERS ============================== */
 // retorna marcador de inicio do pacote

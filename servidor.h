@@ -12,4 +12,6 @@ void cdc(unsigned char* buffer);
 void mkdirc(unsigned char* buffer);
 void get(unsigned char *buffer);
 
+unsigned int sequencia(void);
+
 #endif /* __SERVIDOR__*/ 
