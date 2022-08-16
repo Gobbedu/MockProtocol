@@ -7,6 +7,7 @@
 // - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
 // - [] tratar da sequencia de mkdirc e cdc, caso algo de errado, senao sequencia nunca emparelha dnv
 // - [] tratar next_seq do cliente e do servidor, update quando aceita
+// - [] sequencia do GET ta quebrada
 
 // global para servidor
 int soquete;
@@ -210,12 +211,12 @@ void get(unsigned char *buffer){
     if(arquivo == NULL){        
         resultado = ERRO;
         flag = (char*)malloc(sizeof(char));
-        switch (errno){         // errno da 11, que nao eh erro esperado
-            case 2:             // ret devolve ($?)*256 de mkdir em system(mkdir)
-                flag = arq_nn_E;
+        switch (errno){       // errno da 11, que nao eh erro esperado
+            case 2:       // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = (char*) &arq_nn_E;
                 break;
-            case 13*256:        // nunca acontece 
-                flag = sem_permissao;
+            case 13*256:    // nunca acontece 
+                flag = (char*) &sem_permissao;
                 break;
             default:
                 flag = "?";
@@ -228,19 +229,15 @@ void get(unsigned char *buffer){
         stat(get, &st);
         flag = calloc(10, sizeof(char));
         sprintf(flag, "%ld", st.st_size);
-        printf("dado: %s\n", flag);
     }
 
+    int len_msg = (resultado == ERRO) ? 1 : strlen(flag);
     resposta = make_packet(sequencia(), resultado, flag, resultado);
     if(!resposta) return;   // se pacote deu errado
 
     bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));         // print detalhes do erro
-
-    free_packet(resposta);
-    free(get);
-    free(flag);
 
     // FAZER AQUI A LOGICA DA JANELA DESLIZANTE
 }

@@ -127,13 +127,13 @@ void response_GET(unsigned char* resposta){
     // verificando o diretorio atual
     getcwd(pwd, sizeof(pwd));
 
-    char *byte, *bashdf = "df -h --output=avail / | tail -n +2 > /tmp/tamanho_gb.txt";
+    char *bashdf = "df -h --output=avail / | tail -n +2 > /tmp/tamanho_gb.txt";
     char *bashrm = "rm /tmp/tamanho_gb.txt";
-
     system(bashdf);
     FILE *memfree = fopen("/tmp/tamanho_gb.txt", "r");
     fscanf(memfree, "%d", &e_livre);
     system(bashrm);
+
 
     printf("\nmeu pc tem %d memoria livre \n\n",e_livre);
     // transformando o tamanho do arquivo de bytes para Gb
@@ -243,7 +243,7 @@ int cliente_sinaliza(char *comando, int tipo)
                     response_GET(resposta);
                     free_packet(packet);
                     free(data);
-                    return;
+                    return true;
 
                 case NACK:
                     nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
@@ -272,10 +272,15 @@ int cliente_sinaliza(char *comando, int tipo)
 
 /*
 // função para tratar o get
-void get(char *comando, int tipo){
+void get(char *comando, int tipo, int tipo){
 
     int bytes, timeout, fim, lost_conn, resultado;
     unsigned char resposta[TAM_PACOTE];
+    unsigned char *resposta_2;
+    char pwd[PATH_MAX], flag[1];
+    char* dado;
+    int tamanho = 0;
+    
     unsigned char *resposta_2;
     char pwd[PATH_MAX], flag[1];
     char* dado;
