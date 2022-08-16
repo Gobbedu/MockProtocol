@@ -1,7 +1,7 @@
 .vscode/
-*.o
 teste*
+a.out
+*.o
 log.txt
 cliente
 servidor
-

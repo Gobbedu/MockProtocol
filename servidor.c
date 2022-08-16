@@ -1,6 +1,7 @@
 #include "servidor.h"
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
+#include <sys/stat.h>
 
 // - [] CHECAR FUNCAO check_packet, MUDA CALCULO DA PARIDADE int paradis = 1;
 // - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
@@ -195,16 +196,54 @@ void mkdirc(unsigned char* buffer){
 }
 
 void get(unsigned char *buffer){
-    // int resultado;
-    // unsigned char *resposta;
-    // char *get, flag[1];
-    // int bytes;
-    // int ret;
+    int bytes, resultado;
+    unsigned char *resposta;
+    char *get, *flag;
 
-    // get = (char *) get_packet_data(buffer);
+    get = get_packet_data(buffer);
     
-}
+    // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    FILE *arquivo;
 
+    arquivo = fopen(get, "r");
+
+    if(arquivo == NULL){        
+        resultado = ERRO;
+        flag = (char*)malloc(sizeof(char));
+        switch (errno){         // errno da 11, que nao eh erro esperado
+            case 2:             // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = arq_nn_E;
+                break;
+            case 13*256:        // nunca acontece 
+                flag = sem_permissao;
+                break;
+            default:
+                flag = "?";
+                break;
+        };
+        printf("erro %d foi : %s ; flag (%s)\n",errno, strerror(errno), flag);
+    }
+    else{
+        resultado = DESC_ARQ;
+        stat(get, &st);
+        flag = calloc(10, sizeof(char));
+        sprintf(flag, "%ld", st.st_size);
+        printf("dado: %s\n", flag);
+    }
+
+    resposta = make_packet(sequencia(), resultado, flag, resultado);
+    if(!resposta) return;   // se pacote deu errado
+
+    bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
+    if(bytes<0)                                         // pega erros, se algum
+        printf("error: %s\n", strerror(errno));         // print detalhes do erro
+
+    free_packet(resposta);
+    free(get);
+    free(flag);
+
+    // FAZER AQUI A LOGICA DA JANELA DESLIZANTE
+}
 
 // atualiza e retorna proxima sequencia
 unsigned int sequencia(void)
@@ -213,14 +252,3 @@ unsigned int sequencia(void)
     serv_seq = (serv_seq+1)%MAX_SEQUENCE;
     return now;
 }
-
-
-// retorna sequencia passada do servidor (precisa?)
-// unsigned int get_lastseq(void){
-//     return (last_sequence-1);
-// }
-// proxima sequencia do cliente (precisa de funcao?)
-// unsigned int next_cli(int seq_cli){
-//     nxts_cli = (seq_cli+1)%MAX_SEQUENCE;
-//     return 
-// }

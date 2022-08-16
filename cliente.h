@@ -10,7 +10,7 @@
 
 int cliente_sinaliza(char *comando, int tipo);
 void client_switch(char* comando);
-void get(char *comando);
+void get(char *comando, int tipo);
 
 unsigned int sequencia(void);
 
