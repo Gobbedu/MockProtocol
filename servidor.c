@@ -202,7 +202,6 @@ void get(unsigned char *buffer){
         stat(get, &st);
         flag = calloc(10, sizeof(char));
         sprintf(flag, "%ld", st.st_size);
-        printf("dado: %s\n", flag);
     }
 
     resposta = make_packet(sequencia(), resultado, flag, resultado);
