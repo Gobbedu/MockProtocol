@@ -2,6 +2,8 @@
 #include "cliente.h"
 #include "Packet.h"
 
+// - [] response_GET responde NACK, servidor deve tratar
+
 // todos no cliente podem ver, mas servidor nao
 int soquete;
 int client_seq = 0;     // current client sequence
@@ -220,7 +222,6 @@ int cliente_sinaliza(char *comando, int tipo)
             // precisa checar paridade, servidor responde dnv (???????????) nao sei
             if (!check_parity ((unsigned char *)resposta)){             
                 // Paridade diferente: NACK 
-                nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
                 // mensagem recebida mas nao compreendida, reenviar
                 printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
                 lost_conn = timeout = 0;
@@ -229,6 +230,7 @@ int cliente_sinaliza(char *comando, int tipo)
                 break;  // exit response loop & re-send 
             }
 
+            // nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
             switch (get_packet_type(resposta))
             {
                 case OK:
@@ -239,6 +241,7 @@ int cliente_sinaliza(char *comando, int tipo)
                     return true;
 
                 case DESC_ARQ:
+                    nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
                     read_packet(resposta);
                     response_GET(resposta);
                     free_packet(packet);
@@ -246,7 +249,7 @@ int cliente_sinaliza(char *comando, int tipo)
                     return true;
 
                 case NACK:
-                    nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
+                    // nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
                     // mensagem recebida mas nao compreendida, reenviar
                     printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
                     lost_conn = timeout = 0;
@@ -269,128 +272,6 @@ int cliente_sinaliza(char *comando, int tipo)
     free_packet(packet);
     return false;
 }
-
-/*
-// função para tratar o get
-void get(char *comando, int tipo, int tipo){
-
-    int bytes, timeout, fim, lost_conn, resultado;
-    unsigned char resposta[TAM_PACOTE];
-    unsigned char *resposta_2;
-    char pwd[PATH_MAX], flag[1];
-    char* dado;
-    int tamanho = 0;
-    
-    unsigned char *resposta_2;
-    char pwd[PATH_MAX], flag[1];
-    char* dado;
-    int tamanho = 0;
-    
-
-    // filtra pacote, envia somente parametro do get 
-    comando += 3;                       // remove "get"
-    comando += strspn(comando, " ");    // remove ' '  no inicio do comando
-
-    // cria pacote com parametro para get no server 
-    unsigned char *packet = make_packet(sequencia(), tipo, comando, strlen(comando));
-    if(!packet)
-        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
-
-    timeout = fim = lost_conn = 0;
-    // exit if fim received or 3 timeouts
-    while(!fim && lost_conn<3){ 
-        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes < 0){                                      // pega erros, se algum
-            printf("error: %s\n", strerror(errno));  
-        }
-        printf("%d bytes enviados no socket %d\n", bytes, soquete);
-        // recv(soquete, packet, TAM_PACOTE, 0); //pra lidar com loop back
-
-        // said do loop soh se server responde fim
-        timeout = 0;
-        while(1)
-        {   
-            if(timeout == 3){
-                lost_conn++;
-                break;
-            }
-            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
-            // if(errno == EAGAIN)    // nao tem oq ler
-            if(errno)
-            {
-                printf("recv error : %s; errno: %d\n", strerror(errno), errno);
-                timeout++;
-            }
-            read_packet(resposta);
-            // seq = get_packet_sequence(resposta);
-            if( bytes>0 && 
-                is_our_packet((unsigned char *)resposta) 
-                // && seq == next_seq()
-            ){
-                switch (get_packet_type(resposta))
-                {
-                    case DESC_ARQ:
-                            // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            dado = get_packet_data(resposta);
-                            // pegando o tamanho do arquivo, enviado pelo servidor
-                            tamanho = atoi(dado);
-                            // verificando o diretorio atual
-                            getcwd(pwd, sizeof(pwd));
-
-                            // montando um comando bash para indentificar o espaço livre em disco ---------------------------------------------
-                            char * comando = malloc(sizeof("df -hT ")+ sizeof(pwd)+sizeof(" | tail +2 | cut -d \" \" -f 14 >> livre.txt"));
-                            strcat(comando, "df -hT ");
-                            strcat(comando, pwd);
-                            strcat(comando, " | tail +2 | cut -d \" \" -f 14 >> livre.txt");
-                            system(comando);
-                            // -----------------------------------------------------------------------------------------------------------------
-
-                            FILE *livre = fopen("livre.txt", "r");
-                            char * tmp = malloc(sizeof(char));
-                            fscanf(livre, "%s", tmp);
-                            system("rm livre.txt");
-                            int t_tmp = strlen(tmp);
-                            tmp[t_tmp] = '\0';
-                            int e_livre = atoi(tmp); 
-
-                            // transformando o tamanho do arquivo de bytes para Gb
-                            tamanho /= 1024;
-                            tamanho /= 1024;
-                            tamanho /= 1024;
-
-                            // caso o tamanho do arquivo seja maior que espaço livre
-                            if(e_livre < tamanho){
-                                resultado = ERRO;
-                                flag[0] = sem_espaco;
-                                printf("Espaço insuficiente!\n");
-                            }
-                            else{
-                                resultado = OK;
-                            }
-                            resposta_2 = make_packet(sequencia(), resultado, flag, resultado == ERRO);
-                            if(!resposta_2) return;   // se pacote deu errado
-
-                            bytes = send(soquete, resposta_2, TAM_PACOTE, 0);                 // envia packet para o socket
-                            if(bytes<0)                                                     // pega erros, se algum
-                                printf("error: %s\n", strerror(errno));                     // print detalhes do erro
-
-                            free(resposta_2);
-
-                            // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-                        return;
-
-                    case NACK:
-                        break;  // exit response loop & re-send 
-
-                    case ERRO:
-                        printf("erro: servidor respondeu %s\n", get_packet_data(resposta));
-                        return;
-                }
-            }
-        }
-    }
-}
-*/
 
 // atualiza e retorna proxima sequencia
 unsigned int sequencia(void)
