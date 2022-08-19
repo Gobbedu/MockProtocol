@@ -65,7 +65,12 @@ typedef struct envelope_packet envelope_packet;
 
 // PROTOTIPOS //
 
-/* ================ packet something ================ */
+/* ================ stream functions ================ */
+unsigned char** chunck_file(unsigned int start_seq, char *file, int *arr_size);
+int build_file(char *file, unsigned char **packet_array, int array_size);
+
+
+/* ================ packet functions ================ */
 unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
 
 int check_sequence(unsigned char *buffer, int expected_seq);
