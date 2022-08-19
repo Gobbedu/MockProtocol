@@ -8,7 +8,7 @@
 // - [] tratar da sequencia de mkdirc e cdc, caso algo de errado, senao sequencia nunca emparelha dnv
 // - [] tratar next_seq do cliente e do servidor, update quando aceita
 // - [] sequencia do GET ta quebrada
-
+// - [] responder NACK se erro na paridade da msg recebida do cliente
 // global para servidor
 int soquete;
 int serv_seq = 0;   // current server sequence
@@ -202,15 +202,14 @@ void get(unsigned char *buffer){
     char *get, *flag;
 
     get = get_packet_data(buffer);
-    
-    // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // nxts_cli
     FILE *arquivo;
 
     arquivo = fopen(get, "r");
-
+    // printf("strerrno: (%s) errno:(%d) arquivo:(%p)\n", strerror(errno), errno, arquivo);
     if(arquivo == NULL){        
         resultado = ERRO;
-        flag = (char*)malloc(sizeof(char));
+        flag = (char*)calloc(1, sizeof(char));
         switch (errno){       // errno da 11, que nao eh erro esperado
             case 2:       // ret devolve ($?)*256 de mkdir em system(mkdir)
                 flag = (char*) &arq_nn_E;
@@ -222,23 +221,24 @@ void get(unsigned char *buffer){
                 flag = "?";
                 break;
         };
-        printf("erro %d foi : %s ; flag (%s)\n",errno, strerror(errno), flag);
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), *flag);
     }
     else{
         resultado = DESC_ARQ;
         stat(get, &st);
-        flag = calloc(10, sizeof(char));
+        flag = calloc(16, sizeof(char));    // 1Tb sao 13 digitos, 16 vai ate 999Tb
         sprintf(flag, "%ld", st.st_size);
     }
 
     int len_msg = (resultado == ERRO) ? 1 : strlen(flag);
-    resposta = make_packet(sequencia(), resultado, flag, resultado);
+    resposta = make_packet(sequencia(), resultado, flag, len_msg);
     if(!resposta) return;   // se pacote deu errado
 
     bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));         // print detalhes do erro
 
+    // tratar resposta do cliente (OK;NACK;ERRO)
     // FAZER AQUI A LOGICA DA JANELA DESLIZANTE
 }
 
