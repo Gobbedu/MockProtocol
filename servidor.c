@@ -9,6 +9,9 @@
 // - [] tratar next_seq do cliente e do servidor, update quando aceita
 // - [] sequencia do GET ta quebrada
 // - [] responder NACK se erro na paridade da msg recebida do cliente
+// - [] get: se nack responde e espera outra msg
+
+
 // global para servidor
 int soquete;
 int serv_seq = 0;   // current server sequence
@@ -238,7 +241,14 @@ void get(unsigned char *buffer){
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));         // print detalhes do erro
 
-    // tratar resposta do cliente (OK;NACK;ERRO)
+    if(*flag == ERRO)
+        return;
+
+    
+    // tratar resposta do cliente (OK;NACK)
+
+    if(*flag == OK)
+        janela_envia4(soquete, arquivo, serv_seq, nxts_cli);
     // FAZER AQUI A LOGICA DA JANELA DESLIZANTE
 }
 

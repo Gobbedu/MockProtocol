@@ -68,6 +68,9 @@ typedef struct envelope_packet envelope_packet;
 /* ================ stream functions ================ */
 unsigned char** chunck_file(unsigned int start_seq, char *file, int *arr_size);
 int build_file(char *file, unsigned char **packet_array, int array_size);
+void janela_recebe4(int socket, FILE *file, unsigned int this_seq, unsigned int other_seq);
+void janela_envia4 (int socket, FILE *file, unsigned int this_seq, unsigned int other_seq);
+
 
 
 /* ================ packet functions ================ */

@@ -115,7 +115,7 @@ void client_switch(char* comando){
 
 
 // talvez precise refatorar mais tarde (put & ls tb usam tipo desc_arq)
-void response_GET(unsigned char* resposta){
+int response_GET(unsigned char* resposta, char *parametro){
     int bytes, resultado, e_livre;
     unsigned char *resposta_2;
     char pwd[PATH_MAX], flag[1];
@@ -134,10 +134,11 @@ void response_GET(unsigned char* resposta){
     system(bashdf);
     FILE *memfree = fopen("/tmp/tamanho_gb.txt", "r");
     fscanf(memfree, "%d", &e_livre);
+    fclose(memfree);
     system(bashrm);
 
 
-    printf("\nmeu pc tem %d memoria livre \n\n",e_livre);
+    printf("\nmeu pc tem %dG memoria livre \n",e_livre);
     // transformando o tamanho do arquivo de bytes para Gb
     tamanho /= 1024;
     tamanho /= 1024;
@@ -160,8 +161,15 @@ void response_GET(unsigned char* resposta){
         printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
     free(resposta_2);
+    if(resultado == ERRO)
+        return false;
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
+    char *dest;
+    sprintf(dest, "(copy)%s", parametro);
+    FILE *escreve_file;
+    escreve_file = fopen(dest, "w");
+    janela_recebe4(soquete, escreve_file, client_seq, nxts_serve);
 }
 
 
@@ -170,7 +178,7 @@ void response_GET(unsigned char* resposta){
  *  B - Permission denied           : 13
  *  C - File already exists         : 11 (?)
  */
-int cliente_sinaliza(char *comando, int tipo)
+int cliente_sinaliza(char *parametro, int tipo)
 {
 
     int bytes, timeout, lost_conn, resend;
@@ -178,7 +186,7 @@ int cliente_sinaliza(char *comando, int tipo)
     char* data;
 
     /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(sequencia(), tipo, comando, strlen(comando));
+    unsigned char *packet = make_packet(sequencia(), tipo, parametro, strlen(parametro));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
@@ -207,6 +215,7 @@ int cliente_sinaliza(char *comando, int tipo)
             if(errno == EAGAIN || errno == EWOULDBLOCK){    // pega timeout
                 printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
                 timeout++;
+                continue;
             }
 
             // VERIFICA //
@@ -243,7 +252,7 @@ int cliente_sinaliza(char *comando, int tipo)
                 case DESC_ARQ:
                     nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
                     read_packet(resposta);
-                    response_GET(resposta);
+                    response_GET(resposta, parametro);
                     free_packet(packet);
                     free(data);
                     return true;
