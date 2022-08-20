@@ -7,14 +7,14 @@
 // todos no cliente podem ver, mas servidor nao
 int soquete;
 unsigned int client_seq = 0;     // current client sequence
-unsigned int nxts_serve = 1;     // expected next server sequence
+unsigned int nxts_serve = 10;     // expected next server sequence
 
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    // soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
-    soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -321,7 +321,7 @@ unsigned int sequencia(void)
 {
     int now = client_seq;
     client_seq = (client_seq+1)%MAX_SEQUENCE;
-    return client_seq;
+    return now;
 }
 // // retorna sequencia atual
 // unsigned int get_seq(void){

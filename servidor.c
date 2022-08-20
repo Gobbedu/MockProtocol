@@ -17,8 +17,8 @@
 
 // global para servidor
 int soquete;
-unsigned int serv_seq = 0;   // current server sequence
-unsigned int nxts_cli = 1;   // expected next client sequence
+unsigned int serv_seq = 10;   // current server sequence
+unsigned int nxts_cli = 0;   // expected next client sequence
 
 
 /* sniff sniff */
@@ -28,8 +28,8 @@ int main()
     // int check;
     // unsigned char *resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
     unsigned char* pacote;
-    // soquete = ConexaoRawSocket("lo");
-    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    soquete = ConexaoRawSocket("lo");
+    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -298,5 +298,5 @@ unsigned int sequencia(void)
 {
     int now = serv_seq;
     serv_seq = (serv_seq+1)%MAX_SEQUENCE;
-    return serv_seq;
+    return now;
 }
