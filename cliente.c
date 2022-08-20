@@ -190,95 +190,10 @@ int cliente_sinaliza(char *parametro, int tipo)
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
-    // read_packet(packet);
-    /*
-    timeout = lost_conn = 0;
-    // exit if received 3 timeouts, or return if OK
-    while(lost_conn<3){ 
-        resend = 0;
-
-        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes < 0){                                      // pega erros, se algum
-            printf("error: %s\n", strerror(errno));  
-        }
-
-        // said do loop soh se server responde nack, (ok e erro retorna da funcao)
-        timeout = 0;
-        while(!resend)
-        {   
-            if(timeout == 3){
-                lost_conn++;
-                break;
-            }
-
-            bytes = recv(soquete, resposta, TAM_PACOTE, 0);
-            if(errno == EAGAIN || errno == EWOULDBLOCK){    // pega timeout
-                printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
-                timeout++;
-                continue;
-            }
-
-            // VERIFICA //
-            if (bytes <= 0) continue;                                   // algum erro no recv
-            if (!is_our_packet((unsigned char*) resposta)) continue;    // nao eh nosso pacote
-            if (!check_sequence(resposta, nxts_serve)){                 // sequencia incorreta
-                printf("client expected %d but got %d as a sequence\n", nxts_serve, get_packet_sequence(resposta));
-                continue;
-            }
-
-            // PROCESSA //
-            data = get_packet_data(resposta);
-            // precisa checar paridade, servidor responde dnv (???????????) nao sei
-            if (!check_parity ((unsigned char *)resposta)){             
-                // Paridade diferente: NACK 
-                // mensagem recebida mas nao compreendida, reenviar
-                printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-                lost_conn = timeout = 0;
-                resend = true;
-                free(data);
-                break;  // exit response loop & re-send 
-            }
-            // nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
-            switch (get_packet_type(resposta))
-            {
-                case OK:
-                    nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
-                    printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-                    free_packet(packet);
-                    free(data);
-                    return true;
-
-                case DESC_ARQ:  // resposta do server pro get
-                    nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
-                    read_packet(resposta);
-                    response_GET(resposta, parametro);
-                    free_packet(packet);
-                    free(data);
-                    return true;
-
-                case NACK:
-                    // nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
-                    // mensagem recebida mas nao compreendida, reenviar
-                    printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-                    lost_conn = timeout = 0;
-                    resend = true;
-                    break;  // exit response loop & re-send 
-
-                case ERRO:
-                    nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
-                    printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-                    free_packet(packet);
-                    free(data);
-                    return false;
-            }
-            free(data);
-        }
-    }
-    printf("Erro de comunicacao, servidor nao responde :(\n");
-        */
-
+    // envia pacote pro servidor e aguarda uma resposta
     resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
     if(!resposta) return false;
+
     data = get_packet_data(resposta);
     switch (get_packet_type(resposta))
     {
@@ -323,16 +238,4 @@ unsigned int sequencia(void)
     client_seq = (client_seq+1)%MAX_SEQUENCE;
     return now;
 }
-// // retorna sequencia atual
-// unsigned int get_seq(void){
-//     return now_sequence;
-// }
-// // retorna sequencia passada
-// unsigned int get_lastseq(void){
-//     return last_sequence;
-// }
-// // simula qual seria a proxima sequencia
-// unsigned int next_seq(void){
-//     return (now_sequence+1)%MAX_SEQUENCE;
-// }
 

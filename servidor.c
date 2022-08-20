@@ -41,30 +41,6 @@ int main()
         pacote = recebe(soquete, &serv_seq, &nxts_cli);
         if(!pacote) 
             continue;
-        
-        /*
-        bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
-
-        // VERIFICA //
-        if (bytes<=0) continue;                 // se erro ou vazio, ignora
-        if (!is_our_packet(buffer)) continue;   // se nao eh nosso pacote, ignora
-        if (!check_sequence((unsigned char*) buffer, nxts_cli)){
-            // sequencia diferente: ignora
-            printf("server expected %d but got %d as a sequence\n", nxts_cli, get_packet_sequence(buffer));
-            continue;
-        }
-        
-        // PROCESSA //
-        if (!check_parity(buffer)){             
-            // paridade diferente: NACK
-            resposta = make_packet(sequencia(), NACK, NULL, 0);
-            send(soquete, resposta, TAM_PACOTE, 0);  
-            continue;                                         
-        }
-
-        // tudo ok, redireciona comando
-        nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
-        */
 
         read_packet(pacote);
         server_switch(pacote);
@@ -264,9 +240,6 @@ void get(unsigned char *buffer){
         printf("falha ao criar pacote de resposta do get, terminando\n");
         return;   
     }  
-
-    // resposta_cli = envia(soquete, resposta_srv, &nxts_cli);
-    // if(!resposta_cli) return;
     
     send(soquete, resposta_srv, TAM_PACOTE, 0);
     bytes = recv(soquete, resposta_cli, TAM_PACOTE, 0);
