@@ -140,14 +140,8 @@ int response_GET(unsigned char* resposta_srv, char *file){
     fclose(memfree);
     system(bashrm);
 
-
-    printf("\nmeu pc tem %d bytes de memoria livre \n",mem_livre);
-    // transformando o tamanho do arquivo de bytes para Gb
-    // tamanho /= 1024*1024*1024;
-    // tamanho /= 1024;
-    // tamanho /= 1024;
-
     // caso o tamanho do arquivo seja maior que espaço livre
+    printf("\nmeu pc tem %d bytes de memoria livre \n",mem_livre);
 
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
@@ -170,8 +164,6 @@ int response_GET(unsigned char* resposta_srv, char *file){
     bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
     if(bytes<0)                                             // pega erros, se algum
         printf("falha ao enviar pacote de resposta do get (cliente), erro: %s\n", strerror(errno));         // print detalhes do erro
-    printf("cliente respondeu que cabe pro server, BYTES ENVIADOS: %d\n", bytes);
-    read_packet(resposta_cli);
     free(resposta_cli);
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI

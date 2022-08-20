@@ -214,7 +214,8 @@ void mkdirc(unsigned char* buffer){
 void get(unsigned char *buffer){
     // int bytes, resultado;
     int bytes;
-    unsigned char *resposta_srv, *resposta_cli;
+    // unsigned char *resposta_srv, *resposta_cli;
+    unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
     char *get, *mem, flag;
 
     get = get_packet_data(buffer);  // arquivo a abrir
@@ -264,14 +265,23 @@ void get(unsigned char *buffer){
         return;   
     }  
 
-    resposta_cli = envia(soquete, resposta_srv, &nxts_cli);
-    if(!resposta_cli) return;
+    // resposta_cli = envia(soquete, resposta_srv, &nxts_cli);
+    // if(!resposta_cli) return;
+    
+    send(soquete, resposta_srv, TAM_PACOTE, 0);
+    bytes = recv(soquete, resposta_cli, TAM_PACOTE, 0);
+    if(bytes<0){
+        printf("nao recebeu pacote de resposta do cliente (OK;ERRO;NACK), terminando\n");
+        return;
+    }
+    read_packet(resposta_cli);
+    nxts_cli = (nxts_cli++)%MAX_SEQUENCE;
 
     // define comportamento com base na resposta do cliente
     switch (get_packet_type(resposta_cli))
     {
     case ERRO:                  // arquivo nao cabe
-        free(resposta_cli);     
+        // free(resposta_cli);     
         free(resposta_srv);
         return;                 // termina funcao get
     

@@ -50,7 +50,7 @@ unsigned char *envia(int soquete, unsigned char* packet, unsigned int *expected_
                 timeout++;
                 continue;
             }
-            printf("envia() recebeu resposta de (%d) bytes\n", bytes);
+
             // VERIFICA //
             if (bytes <= 0) continue;                                   // algum erro no recv
             if (!is_our_packet(resposta)) continue;    // nao eh nosso pacote
@@ -136,7 +136,7 @@ unsigned char *recebe(int soquete, unsigned int *this_seq, unsigned int *expecte
 
 void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq)
 {
-    printf("janela de 4 pacotes start\n");
+    printf("janela recebe de 4 pacotes start\n");
 /*
     char *dest;
     sprintf(dest, "(copy)%s", file);
