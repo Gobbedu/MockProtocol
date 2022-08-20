@@ -3,7 +3,7 @@
 #include "ConexaoRawSocket.h"
 #include <sys/stat.h>
 
-// - [] CHECAR FUNCAO check_packet, MUDA CALCULO DA PARIDADE int paradis = 1;
+// - [] CHECAR FUNCAO check_packet sem loopback, MUDA CALCULO DA PARIDADE int paradis = 1;
 // - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
 // - [] tratar da sequencia de mkdirc e cdc, caso algo de errado, senao sequencia nunca emparelha dnv
 // - [] tratar next_seq do cliente e do servidor, update quando aceita
@@ -12,20 +12,24 @@
 // - [] get: se nack responde e espera outra msg
 
 
+// se respode NACK, e mensagem nao chega ao destino, sequencia quebra (conforme esperado)
+
+
 // global para servidor
 int soquete;
-int serv_seq = 0;   // current server sequence
-int nxts_cli = 0;   // expected next client sequence
+unsigned int serv_seq = 0;   // current server sequence
+unsigned int nxts_cli = 1;   // expected next client sequence
 
 
 /* sniff sniff */
 int main()
 {
-    int bytes;
+    // int bytes;
     // int check;
-    unsigned char *resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
-    soquete = ConexaoRawSocket("lo");
-    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    // unsigned char *resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
+    unsigned char* pacote;
+    // soquete = ConexaoRawSocket("lo");
+    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -34,6 +38,11 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
     while(1){
+        pacote = recebe(soquete, &serv_seq, &nxts_cli);
+        if(!pacote) 
+            continue;
+        
+        /*
         bytes = recv(soquete, buffer, sizeof(buffer), 0);           // recebe dados do socket
 
         // VERIFICA //
@@ -55,8 +64,11 @@ int main()
 
         // tudo ok, redireciona comando
         nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
-        read_packet(buffer);
-        server_switch(buffer);
+        */
+
+        read_packet(pacote);
+        server_switch(pacote);
+        free(pacote);
     }
     
     close(soquete);
@@ -200,56 +212,75 @@ void mkdirc(unsigned char* buffer){
 }
 
 void get(unsigned char *buffer){
-    int bytes, resultado;
-    unsigned char *resposta;
-    char *get, *flag;
+    // int bytes, resultado;
+    int bytes;
+    unsigned char *resposta_srv, *resposta_cli;
+    char *get, *mem, flag;
 
-    get = get_packet_data(buffer);
+    get = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
 
     arquivo = fopen(get, "r");
-    // printf("strerrno: (%s) errno:(%d) arquivo:(%p)\n", strerror(errno), errno, arquivo);
-    if(arquivo == NULL){        
-        resultado = ERRO;
-        flag = (char*)calloc(1, sizeof(char));
-        switch (errno){       // errno da 11, que nao eh erro esperado
-            case 2:       // ret devolve ($?)*256 de mkdir em system(mkdir)
-                flag = (char*) &arq_nn_E;
+
+    // ERRO AO LER ARQUIVO, retorna //
+    if(!arquivo){        
+        switch (errno){             // errno da 11, que nao eh erro esperado
+            case 2:                 // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = arq_nn_E;
                 break;
-            case 13*256:    // nunca acontece 
-                flag = (char*) &sem_permissao;
+            case 13*256:            // nunca acontece (erro de permissao)
+                flag = sem_permissao;
                 break;
             default:
-                flag = "?";
+                flag = '?';
                 break;
         };
-        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), *flag);
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag);
+
+        resposta_srv = make_packet(sequencia(), ERRO, &flag, 1);
+        if(!resposta_srv){  // se pacote deu errado
+            printf("falha ao criar pacote de resposta do get (servidor), terminando\n");
+            return;   
+        } 
+
+        bytes = send(soquete, resposta_srv, TAM_PACOTE, 0);     // envia packet para o socket
+        if(bytes<0)                                             // pega erros, se algum
+            printf("falha ao enviar pacote de resposta do get (servidor), erro: %s\n", strerror(errno));         // print detalhes do erro
+        free(resposta_srv);
+        return;         
+        // fim da funcao get, se ERRO
     }
-    else{
-        resultado = DESC_ARQ;
-        stat(get, &st);
-        flag = calloc(16, sizeof(char));    // 1Tb sao 13 digitos, 16 vai ate 999Tb
-        sprintf(flag, "%ld", st.st_size);
-    }
 
-    int len_msg = (resultado == ERRO) ? 1 : strlen(flag);
-    resposta = make_packet(sequencia(), resultado, flag, len_msg);
-    if(!resposta) return;   // se pacote deu errado
+    // ARQUIVO ABERTO //
+    stat(get, &st);                     // devolve atributos do arquivo
+    mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
+    sprintf(mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
 
-    bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
-    if(bytes<0)                                         // pega erros, se algum
-        printf("error: %s\n", strerror(errno));         // print detalhes do erro
+    resposta_srv = make_packet(sequencia(), DESC_ARQ, mem, 16); // string de 16 digitos em bytes
+    free(mem);
+    if(!resposta_srv){  // se pacote deu errado
+        printf("falha ao criar pacote de resposta do get, terminando\n");
+        return;   
+    }  
 
-    if(*flag == ERRO)
-        return;
+    resposta_cli = envia(soquete, resposta_srv, &nxts_cli);
+    if(!resposta_cli) return;
 
+    // define comportamento com base na resposta do cliente
+    switch (get_packet_type(resposta_cli))
+    {
+    case ERRO:                  // arquivo nao cabe
+        free(resposta_cli);     
+        free(resposta_srv);
+        return;                 // termina funcao get
     
-    // tratar resposta do cliente (OK;NACK)
+    case OK:                    // envia arquivo
+        janela_envia4(soquete, arquivo, &serv_seq, &nxts_cli);
+        return;
+    }
 
-    if(*flag == OK)
-        janela_envia4(soquete, arquivo, serv_seq, nxts_cli);
-    // FAZER AQUI A LOGICA DA JANELA DESLIZANTE
+    return;
 }
 
 // atualiza e retorna proxima sequencia
@@ -257,5 +288,5 @@ unsigned int sequencia(void)
 {
     int now = serv_seq;
     serv_seq = (serv_seq+1)%MAX_SEQUENCE;
-    return now;
+    return serv_seq;
 }

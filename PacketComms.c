@@ -2,12 +2,147 @@
 
 /* ============================== STREAM FUNCTIONS ============================== */
 
-// - [] juntar os timeouts
+/*  - [x] juntar os timeouts (envia)
+    - [] incrementa ou nao a sequencia na mensagem NACK para a resposta? 
+         se mensagem NACK nao chega, timeo no receptor + resend, proxima resposta com sequencia diferente da esperada 
+    
+*/
+
+
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
 
-void janela_recebe4(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
+/* envia UM pacote e espera UMA resposta,
+ * re-envia caso nack ou timeout, 
+ * retorna NULL se perde conexao ou o pacote se recebe resposta esperada
+ * atualiza expected_seq, se deu certo
+ */ 
+unsigned char *envia(int soquete, unsigned char* packet, unsigned int *expected_seq)
 {
+    int bytes, timeout, lost_conn, resend;
+    unsigned char resposta[TAM_PACOTE];
+    char* data;
+
+    // exit if recebe 3 timeouts da funcao
+    timeout = lost_conn = 0;
+    while(lost_conn<3){ 
+        resend = 0;
+
+        printf("sending packet:\n");
+        read_packet(packet);
+        printf("\n");
+        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes < 0){                                      // pega erros, se algum
+            printf("error: %s\n", strerror(errno));  
+        }
+
+        // said do loop soh se server responde nack, (ok e erro retorna da funcao)
+        timeout = 0;
+        while(!resend)
+        {   
+            if(timeout == 3){   // recv deu timeout 3 vezes, timeout da funcao
+                lost_conn++;
+                break;
+            }
+
+            bytes = recv(soquete, (void*) resposta, TAM_PACOTE, 0); 
+            if(errno == EAGAIN || errno == EWOULDBLOCK){    // se ocorreu timeout
+                printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
+                timeout++;
+                continue;
+            }
+            printf("envia() recebeu resposta de (%d) bytes\n", bytes);
+            // VERIFICA //
+            if (bytes <= 0) continue;                                   // algum erro no recv
+            if (!is_our_packet(resposta)) continue;    // nao eh nosso pacote
+            // read_packet(resposta);
+            // por enquanto se sequencia errada, ignora
+            // talvez o certo seja nack(sequencia esperada)
+            // [talvez soh pros dados precise dessa logica]
+            if (!check_sequence(resposta, *expected_seq)){              // sequencia incorreta
+                printf("client expected %d but got %d as a sequence\n", *expected_seq, get_packet_sequence(resposta));
+                continue;
+            }
+
+            // SE NACK, REENVIA //
+            // precisa checar paridade, servidor responde dnv (???????????) nao sei
+            // Paridade diferente: NACK 
+            // mensagem recebida mas nao compreendida, reenviar
+            if (!check_parity ((unsigned char *)resposta)){             
+                data = get_packet_data(resposta);
+                printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+
+                lost_conn = timeout = 0;
+                resend = true;
+                free(data);
+                break;  // exit response loop & re-send 
+            }
+
+            // SE VERIFICADO & !NACK //
+            // devolve resposta //
+            // printf("pacote enviado recebeu resposta!\n");
+            unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+            // read_packet(resposta);
+            memcpy(pacote, resposta, TAM_PACOTE);
+            *expected_seq = ((*expected_seq)+1)%MAX_SEQUENCE;
+            return pacote;
+        }
+    }
+
+    printf("Erro de comunicacao, servidor nao responde :(\n");
+    return NULL;
+}
+
+// recebe UM pacote, bloqueante (?) 
+// retorna NULL se nn recebeu nada ou aloca um pacote se recebe pacote esperado
+// pacote recebido deve ser liberado da memoria, free(pacote recebido)
+unsigned char *recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
+{
+    int bytes;
+    unsigned char *resposta;
+    unsigned char buffer[TAM_PACOTE];
+    bytes = recv(soquete, buffer, TAM_PACOTE, 0);       // recebe dados do socket
+
+    // VERIFICA //
+    if (bytes<=0) return NULL;                 // se erro ou vazio, ignora
+    if (!is_our_packet(buffer)) return NULL;   // se nao eh nosso pacote, ignora
+    if (!check_sequence((unsigned char*) buffer, *expected_seq)){
+        // sequencia diferente: ignora
+        printf("server expected %d but got %d as a sequence\n", *expected_seq, get_packet_sequence(buffer));
+        return NULL;
+    }
+    
+    // paridade diferente: NACK
+    if (!check_parity(buffer)){             
+        resposta = make_packet(*this_seq, NACK, NULL, 0);
+        *this_seq = ((*this_seq)+1)%MAX_SEQUENCE;
+
+        bytes = send(soquete, resposta, TAM_PACOTE, 0);  
+        if(bytes <= 0)
+            printf("send error at envia : (%s); errno: (%d)\n", strerror(errno), errno);
+
+        free(resposta);
+        return NULL;                                         
+    }
+
+    // VERIFICA & !NACK, devolve pacote
+    unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+    memcpy(pacote, buffer, TAM_PACOTE);
+    
+    *(expected_seq) = ((*expected_seq)+1)%MAX_SEQUENCE;
+    return pacote;
+}
+
+
+
+void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq)
+{
+    printf("janela de 4 pacotes start\n");
 /*
+    char *dest;
+    sprintf(dest, "(copy)%s", file);
+    
+    FILE *escreve_file;
+    escreve_file = fopen(dest, "w");
   unsigned 
 
   while(resposta(dado) != FIM){
@@ -25,8 +160,13 @@ void janela_recebe4(int socket, FILE *file, unsigned int *this_seq, unsigned int
 
 void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
-  int len_arr;
-  unsigned char **packet_arr = chunck_file((*this_seq), file, &len_arr);
+
+    //   int len_arr;
+    // recebe char *file, nao FILE *file
+    // unsigned char **packet_arr = chunck_file((*this_seq), file, &len_arr);
+  
+    printf("janela envia 4 pacotes start\n");
+    rewind(file);       // aponta para o inicio do arquivo
 
 /*
   int i = 0
@@ -75,9 +215,9 @@ void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int 
     print deu ruim se lost_con == 3
 */
 
-  for(int i = 0; i < len_arr; i++)
-    free(packet_arr[i]);
-  free(packet_arr);
+  // for(int i = 0; i < len_arr; i++)
+  //   free(packet_arr[i]);
+  // free(packet_arr);
 }
 
 

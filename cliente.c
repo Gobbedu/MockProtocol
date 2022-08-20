@@ -6,15 +6,15 @@
 
 // todos no cliente podem ver, mas servidor nao
 int soquete;
-int client_seq = 0;     // current client sequence
-int nxts_serve = 0;     // expected next server sequence
+unsigned int client_seq = 0;     // current client sequence
+unsigned int nxts_serve = 1;     // expected next server sequence
 
 int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
-    // soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -44,7 +44,7 @@ void client_switch(char* comando){
     comando[strcspn(comando, "\n")] = 0;                // remove new line
     char *parametro = comando;      // = comando pro make nn reclama, dpois tiro
 
-    // LOCAL //
+    //======================== LOCAL ========================//
 	if(strncmp(comando, "lsc", 3) == 0)
     {
         parametro[2] = ' ';                               // remove 'c' : lsc -> ls_
@@ -67,7 +67,7 @@ void client_switch(char* comando){
             printf("ERRO: %s, errno: %d  parametro: (%s)\n", strerror(errno), errno, parametro);
     }
 
-    // SERVIDOR //
+    //======================== SERVIDOR ========================//
     else if(strncmp(comando, "cds", 3) == 0)
     {   // chdir nao pode ter espacos errados
         parametro += 3;                         // remove "cds"
@@ -110,66 +110,74 @@ void client_switch(char* comando){
         }
         if(comando[0] != 0)     // diferente de um enter
             printf("comando invalido: %s\n", comando);
+        if(strncmp(comando, "print", 5) == 0){
+            printf("seq servidor esperada: %d\nsequencia cliente: %d\n ", nxts_serve, client_seq);
+        }
     }
 }
 
 
 // talvez precise refatorar mais tarde (put & ls tb usam tipo desc_arq)
-int response_GET(unsigned char* resposta, char *parametro){
-    int bytes, resultado, e_livre;
-    unsigned char *resposta_2;
-    char pwd[PATH_MAX], flag[1];
-    char* dado;
+int response_GET(unsigned char* resposta_srv, char *file){
+    // int bytes, resultado, mem_livre;
+    unsigned char *resposta_cli;
+    int bytes, mem_livre;
+    char pwd[PATH_MAX];
     int tamanho = 0;
+    char* dado;
     
-    // MEXER AQUI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    dado = get_packet_data(resposta);
-    // pegando o tamanho do arquivo, enviado pelo servidor
-    tamanho = atoi(dado);
-    // verificando o diretorio atual
-    getcwd(pwd, sizeof(pwd));
+    dado = get_packet_data(resposta_srv);
+    tamanho = atoi(dado);               // pegando o tamanho do arquivo em bytes, enviado pelo servidor
+    free(dado);
+    getcwd(pwd, sizeof(pwd));           // verificando o diretorio atual
 
-    char *bashdf = "df -h --output=avail / | tail -n +2 > /tmp/tamanho_gb.txt";
+    // CALCULA MEMORIA DISPONIVEL // (em bytes)
+    char *bashdf = "df --output=avail / | tail -n +2 > /tmp/tamanho_gb.txt";
     char *bashrm = "rm /tmp/tamanho_gb.txt";
     system(bashdf);
     FILE *memfree = fopen("/tmp/tamanho_gb.txt", "r");
-    fscanf(memfree, "%d", &e_livre);
+    fscanf(memfree, "%d", &mem_livre);
     fclose(memfree);
     system(bashrm);
 
 
-    printf("\nmeu pc tem %dG memoria livre \n",e_livre);
+    printf("\nmeu pc tem %d bytes de memoria livre \n",mem_livre);
     // transformando o tamanho do arquivo de bytes para Gb
-    tamanho /= 1024;
-    tamanho /= 1024;
-    tamanho /= 1024;
+    // tamanho /= 1024*1024*1024;
+    // tamanho /= 1024;
+    // tamanho /= 1024;
 
     // caso o tamanho do arquivo seja maior que espaço livre
-    if(e_livre < tamanho){
-        resultado = ERRO;
-        flag[0] = sem_espaco;
+
+    // ARQUIVO NAO CABE, retorna //
+    if(mem_livre < tamanho){
         printf("Espaço insuficiente!\n");
-    }
-    else{
-        resultado = OK;
-    }
-    resposta_2 = make_packet(sequencia(), resultado, flag, resultado == ERRO);
-    if(!resposta_2) return;   // se pacote deu errado
-
-    bytes = send(soquete, resposta_2, TAM_PACOTE, 0);                 // envia packet para o socket
-    if(bytes<0)                                                     // pega erros, se algum
-        printf("error: %s\n", strerror(errno));                     // print detalhes do erro
-
-    free(resposta_2);
-    if(resultado == ERRO)
+        resposta_cli = make_packet(sequencia(), ERRO, (char*) &sem_espaco, 1);
+        bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
+        if(bytes<0)                                             // pega erros, se algum
+            printf("falha ao enviar pacote de resposta do get, erro: %s\n", strerror(errno));         // print detalhes do erro
+        free(resposta_cli);
         return false;
+    }
+
+    // ARQUIVO CABE //
+    resposta_cli = make_packet(sequencia(), OK, NULL, 0);
+    if(!resposta_cli){  // se pacote deu errado
+        printf("falha ao criar pacote de resposta do get (cliente), terminando\n");
+        return false;   
+    } 
+
+    bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
+    if(bytes<0)                                             // pega erros, se algum
+        printf("falha ao enviar pacote de resposta do get (cliente), erro: %s\n", strerror(errno));         // print detalhes do erro
+    printf("cliente respondeu que cabe pro server, BYTES ENVIADOS: %d\n", bytes);
+    read_packet(resposta_cli);
+    free(resposta_cli);
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    char *dest;
-    sprintf(dest, "(copy)%s", parametro);
-    FILE *escreve_file;
-    escreve_file = fopen(dest, "w");
-    janela_recebe4(soquete, escreve_file, client_seq, nxts_serve);
+    janela_recebe4(soquete, file, &client_seq, &nxts_serve);
+
+    return true;
 }
 
 
@@ -180,9 +188,9 @@ int response_GET(unsigned char* resposta, char *parametro){
  */
 int cliente_sinaliza(char *parametro, int tipo)
 {
-
-    int bytes, timeout, lost_conn, resend;
-    unsigned char resposta[TAM_PACOTE];
+    // int bytes, timeout, lost_conn, resend;
+    // unsigned char resposta[TAM_PACOTE];
+    unsigned char *resposta;
     char* data;
 
     /* cria pacote com parametro para cd no server */
@@ -191,7 +199,7 @@ int cliente_sinaliza(char *parametro, int tipo)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
     // read_packet(packet);
-
+    /*
     timeout = lost_conn = 0;
     // exit if received 3 timeouts, or return if OK
     while(lost_conn<3){ 
@@ -238,7 +246,6 @@ int cliente_sinaliza(char *parametro, int tipo)
                 free(data);
                 break;  // exit response loop & re-send 
             }
-
             // nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
             switch (get_packet_type(resposta))
             {
@@ -249,7 +256,7 @@ int cliente_sinaliza(char *parametro, int tipo)
                     free(data);
                     return true;
 
-                case DESC_ARQ:
+                case DESC_ARQ:  // resposta do server pro get
                     nxts_serve = (nxts_serve+1)%MAX_SEQUENCE;
                     read_packet(resposta);
                     response_GET(resposta, parametro);
@@ -275,10 +282,45 @@ int cliente_sinaliza(char *parametro, int tipo)
             free(data);
         }
     }
-
     printf("Erro de comunicacao, servidor nao responde :(\n");
+        */
 
-    free_packet(packet);
+    resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
+    if(!resposta) return false;
+    data = get_packet_data(resposta);
+    switch (get_packet_type(resposta))
+    {
+        case OK:        // resposta de (cd, mkdir, put)
+            printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+            free_packet(packet);
+            free(resposta);
+            free(data);
+            return true;
+
+        case DESC_ARQ:  // resposta de (get)
+            read_packet(resposta);
+            response_GET(resposta, parametro);  // parametro eh file
+            free_packet(packet);
+            free(resposta);
+            free(data);
+            return true;
+
+        case ERRO:      // resposta de (ls, cd, mkdir, put, get)
+            printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+            free_packet(packet);
+            free(resposta);
+            free(data);
+            return false;
+
+        case SHOW_NA_TELA:  // resposta do ls
+            return true;
+    }
+
+    printf("nao caiu em nenhum caso acima\n");
+    read_packet(resposta);
+
+    free(resposta);
+    free(packet);
     return false;
 }
 
@@ -287,7 +329,7 @@ unsigned int sequencia(void)
 {
     int now = client_seq;
     client_seq = (client_seq+1)%MAX_SEQUENCE;
-    return now;
+    return client_seq;
 }
 // // retorna sequencia atual
 // unsigned int get_seq(void){
