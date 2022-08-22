@@ -157,6 +157,7 @@ void empty_netbuff(int socket)
         recv(socket, buffer, TAM_PACOTE, 0);
 }
 
+/*
 void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq)
 {
     unsigned char *resposta, buffer[TAM_PACOTE];
@@ -238,21 +239,7 @@ void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int
         resposta = make_packet(*this_seq, ACK, seq, 2);
 
     }
-    
-/*
-    unsigned 
 
-  while(resposta(dado) != FIM){
-    int i = 0;
-    while(recv(peek)){
-      // valida (paridade, sequencia, erro timeo)//
-
-      
-
-      recebeu[i] = recv()
-    }
-  }
-*/
 }
 
 void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
@@ -331,7 +318,7 @@ void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int 
         free(packet_arr[i]);
     free(packet_arr);
 }
-
+*/
 
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
@@ -355,10 +342,6 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         leu_bytes += leu_sz;
         blocks++;
         // VALIDA LEITURA //
-        if(feof(file)){  // termina se fim do arquivo
-            printf("src feof break\n");
-            eof = true;
-        }
         if(leu_sz == 0){ // nao leu nada, erro ou eof
             printf("src leu 0 bytes, break\n");
             break;
@@ -368,6 +351,12 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         if(!envia_msg(socket, this_seq, DADOS, data, leu_sz)){
             printf("ERRO, nao foi possivel enviar_msg() em envia sequencial\n");
             return false;
+        }
+
+        if(feof(file)){  // termina se fim do arquivo
+            printf("src feof break\n");
+            eof = true;
+            continue;
         }
         
         resposta = recebe_msg(socket);
@@ -442,19 +431,18 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
 
     // MONTA ARQUIVO //
     try = 0;            // numero de vezes que vai esperar resposta
-    while(try <= 3){    // soh para se recebe pacote com tipo FIM
+    while(try < 3){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
-        int tentativas = 0;
-        do{ pacote = recebe_msg(socket);
-            tentativas++;
-        } while (!pacote && tentativas < 3);
-        if(!pacote){    
+        pacote = recebe_msg(socket);
+        if(!pacote){
             try++;
             continue;
         }try = 0;
+        read_packet(pacote);
 
         // FIM //
         if(get_packet_type(pacote) == FIM){
+            *other_seq = ((*other_seq)+1)%MAX_SEQUENCE;
             free(pacote);
             break;
         }
@@ -494,8 +482,13 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
 
         free(pacote);
     }
-    printf("algo deu errado com recebe sequencial..\n");
-    return false;
+
+    fclose(dst);
+    if(try == 3){
+        printf("algo deu errado com recebe sequencial..\n");
+        return false;
+    }
+    return true;
 }
 
 // retorna array de pacotes (char *), todos tem tamanho cte (67 bytes)
@@ -661,7 +654,7 @@ unsigned char *recebe_msg(int socket)
         bytes = recv(socket, (void*) resposta, TAM_PACOTE, 0); 
         // se ocorreu timeout
         if(errno == EAGAIN || errno == EWOULDBLOCK){     
-            fprintf(stderr, "(%d) tentativa, ", tentativas);   
+            fprintf(stderr, "tentativa (%d), ", tentativas+1);   
             perror("ERRO timeout recebe_msg()");
             tentativas++;
             continue;
@@ -686,7 +679,7 @@ unsigned char *recebe_msg(int socket)
 
     // nao deu certo, bateu no limite de tentativas
     if(tentativas == NTENTATIVAS){
-        free(resposta);
+        // if(resposta) free(resposta);
         return NULL;
     }
 

@@ -2,7 +2,8 @@
 teste*
 a.out
 *.o
-log.txt
 cliente
 servidor
 Rick*
+(copy)*
+*.txt
