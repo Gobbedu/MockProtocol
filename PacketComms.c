@@ -337,7 +337,8 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     // QUEBRA ARQUIVO EM BLOCOS //
     printf("chunking...\n");
     try = 0;
-    while(try < NTENTATIVAS){  
+    int tentativas = 0;
+    while(tentativas < NTENTATIVAS){  
         leu_sz = fread((void *)data, sizeof(char), max_data, file);
         printf("leu %d bytes do arquivo\n", leu_sz);
         leu_bytes += leu_sz;
@@ -363,22 +364,26 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         // int bytes = recv(socket, resposta, TAM_PACOTE, 0);
       
         // tentar fazer do jeito certo abaixo
-        bytes = recv(socket, resposta, TAM_PACOTE, 0);
-        if(errno == EAGAIN || errno == EWOULDBLOCK){     
-            fprintf(stderr, "tentativa (%d), ", try+1);   
-            perror("ERRO timeout recebe_msg()");
-            try++;
-            continue;
-        }
-        if(bytes <= 0){
-            try++;
-            perror("ERRO ao receber pacote em recebe_sequencial");
-            continue;
-        }
-        if(!is_our_packet(resposta)){
-            try++;
-            continue;
-        }try = 0;
+
+        // while(try < NTENTATIVAS){
+            bytes = recv(socket, resposta, TAM_PACOTE, 0);
+        //     if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        //         fprintf(stderr, "tentativa (%d), ", try+1);   
+        //         perror("ERRO timeout recebe_msg()");
+        //         try++;
+        //         continue;
+        //     }
+        // }
+            if(bytes <= 0){
+                try++;
+                perror("ERRO ao receber pacote em recebe_sequencial");
+                continue;
+            }
+            if(!is_our_packet(resposta)){
+                try++;
+                continue;
+            }try = 0;
+            // break;
         read_packet(resposta);
 
         // resposta = recebe_msg(socket);
@@ -403,6 +408,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
                     // free(resposta);
                     return false;
                 }
+                moven(this_seq, -1);
                 break;
             
             case ACK:   // continua loop normalmente
@@ -740,7 +746,7 @@ unsigned int next(unsigned int *sequence){
 // retorna sequencia n sequencias depois da especificada, n pertence a [-15, +inf)
 unsigned int moven(unsigned int *sequence, int n)
 {
-    *sequence = ((*sequence)+n)%MAX_SEQUENCE;
+    *sequence = ((*sequence)+MAX_SEQUENCE+n)%MAX_SEQUENCE;
     return *sequence;
 }
 
