@@ -358,8 +358,29 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         //     break;
         // }
         
-        // resposta = recebe_msg(socket);
+        // ORIGINAL Q FUNCIONA
         int bytes = recv(socket, resposta, TAM_PACOTE, 0);
+      
+        // tentar fazer do jeito certo abaixo
+        // bytes = recv(socket, resposta, TAM_PACOTE, 0);
+        // if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        //     fprintf(stderr, "tentativa (%d), ", try+1);   
+        //     perror("ERRO timeout recebe_msg()");
+        //     try++;
+        //     continue;
+        // }
+        // if(bytes <= 0){
+        //     try++;
+        //     perror("ERRO ao receber pacote em recebe_sequencial");
+        //     continue;
+        // }
+        // if(!is_our_packet(pacote)){
+        //     try++;
+        //     continue;
+        // }try = 0;
+        // read_packet(pacote);
+
+        // resposta = recebe_msg(socket);
         // if(!resposta){  // se NULL
         //     printf("envia sequencial recebeu resposta NULL\n");
         //     return false;
