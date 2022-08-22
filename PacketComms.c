@@ -5,7 +5,7 @@
 /*  - [x] juntar os timeouts (envia)
     - [] incrementa ou nao a sequencia na mensagem NACK para a resposta? 
          se mensagem NACK nao chega, timeo no receptor + resend, proxima resposta com sequencia diferente da esperada 
-    
+    - [] se cliente nn conseguiu conversar com o servidor, nao incrementar o contador    
 */
 
 #define NTENTATIVAS 3 // numero de vezes que vai tentar ler/enviar um pacote
@@ -341,12 +341,12 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         leu_sz = fread((void *)data, sizeof(char), max_data, file);
         printf("leu %d bytes do arquivo\n", leu_sz);
         leu_bytes += leu_sz;
-        blocks++;
         // VALIDA LEITURA //
         if(leu_sz == 0){ // nao leu nada, erro ou eof
             printf("src leu 0 bytes, break\n");
             break;
         }
+        blocks++;
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
         if(!envia_msg(socket, this_seq, DADOS, data, leu_sz)){
@@ -460,12 +460,12 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         //     break;
         // }
         bytes = recv(socket, pacote, TAM_PACOTE, 0);
-        if(errno == EAGAIN || errno == EWOULDBLOCK){     
-            fprintf(stderr, "tentativa (%d), ", try+1);   
-            perror("ERRO timeout recebe_msg()");
-            try++;
-            continue;
-        }
+        // if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        //     fprintf(stderr, "tentativa (%d), ", try+1);   
+        //     perror("ERRO timeout recebe_msg()");
+        //     try++;
+        //     continue;
+        // }
         if(bytes <= 0){
             try++;
             perror("ERRO ao receber pacote em recebe_sequencial");
@@ -487,19 +487,21 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         // NACK //
         if (!check_sequence(pacote, *other_seq)){
                 // paridade diferente, dado: (sequencia esperada)
-                printf("recebe4 recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
+                printf("recebe recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
                 empty_netbuff(socket);
+                
                 // free(pacote);
                 continue;   // volta a ouvir
         }
         if(!check_parity(pacote)){
-                printf("recebe4 recebeu pacote com erro de paridade, NACK\n");
+                printf("recebe recebeu pacote com erro de paridade, NACK\n");
                 // sequencia diferente, dado:(sequencia atual)
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
                 empty_netbuff(socket);
+                
                 // free(pacote);
                 continue;   // volta a ouvir
         }
