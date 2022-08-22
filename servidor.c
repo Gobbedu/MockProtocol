@@ -121,7 +121,7 @@ void cdc(unsigned char* buffer){
     unsigned char *resposta;
     char *cd, flag[1];
     cd = (char *) get_packet_data(buffer);
-    char *d = malloc(strcspn(cd, " ")*sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
     strncpy(d, cd, strcspn(cd, " "));
 
