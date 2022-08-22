@@ -338,7 +338,9 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     printf("chunking...\n");
     try = 0;
     int tentativas = 0;
+    int enviou = true;
     while(tentativas < NTENTATIVAS){  
+        if(enviou){
         leu_sz = fread((void *)data, sizeof(char), max_data, file);
         printf("leu %d bytes do arquivo\n", leu_sz);
         leu_bytes += leu_sz;
@@ -348,6 +350,9 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
             break;
         }
         blocks++;
+        enviou = false;
+        }
+
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
         if(!envia_msg(socket, this_seq, DADOS, data, leu_sz)){
@@ -376,10 +381,12 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         // }
             if(bytes <= 0){
                 try++;
+                moven(this_seq, -1);
                 perror("ERRO ao receber pacote em recebe_sequencial");
                 continue;
             }
             if(!is_our_packet(resposta)){
+                moven(this_seq, -1);
                 try++;
                 continue;
             }try = 0;
@@ -399,6 +406,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
             printf("recebe_msg() recebeu mensagem com erro na paridade\n");
             return false;
         }
+        enviou = true;
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
@@ -412,6 +420,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
                 break;
             
             case ACK:   // continua loop normalmente
+
                 printf("caiu no ACK\n");
                 break;
 
@@ -682,6 +691,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
     }
 
     next(this_seq);
+    read_packet(packet);
     free(packet);
     return true;
 }
