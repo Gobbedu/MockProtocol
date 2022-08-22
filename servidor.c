@@ -27,6 +27,7 @@ int main()
     // int bytes;
     // int check;
     // unsigned char *resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
+    // unsigned char buffer[TAM_PACOTE];
     unsigned char* pacote;
     soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
@@ -41,7 +42,18 @@ int main()
         pacote = recebe(soquete, &serv_seq, &nxts_cli);
         if(!pacote) 
             continue;
-
+/*
+        if(get_packet_type(pacote) != CD){
+            while(recv(soquete, buffer, TAM_PACOTE, MSG_PEEK) == 67){
+                recv(soquete, buffer, TAM_PACOTE, 0);
+                nxts_cli++;
+                printf("DISCARTED:\n");
+                read_packet(buffer);
+            }
+            send(soquete, make_packet(sequencia(), NACK, "3", 1), TAM_PACOTE, 0);
+            continue;
+        }
+*/
         read_packet(pacote);
         server_switch(pacote);
         free(pacote);
@@ -248,7 +260,7 @@ void get(unsigned char *buffer){
         return;
     }
     read_packet(resposta_cli);
-    nxts_cli = (nxts_cli++)%MAX_SEQUENCE;
+    nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
 
     // define comportamento com base na resposta do cliente
     switch (get_packet_type(resposta_cli))
@@ -259,7 +271,7 @@ void get(unsigned char *buffer){
         return;                 // termina funcao get
     
     case OK:                    // envia arquivo
-        janela_envia4(soquete, arquivo, &serv_seq, &nxts_cli);
+        envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli);
         return;
     }
 

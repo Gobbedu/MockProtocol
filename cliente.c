@@ -22,6 +22,20 @@ int main(){
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
+   /* char buffer[TAM_PACOTE];
+    unsigned char *buff;
+    send(soquete, make_packet(sequencia(), MKDIR, "1o mkdir", 8), TAM_PACOTE, 0);
+    send(soquete, make_packet(sequencia(), MKDIR, "2o mkdir", 8), TAM_PACOTE, 0);
+    send(soquete, make_packet(sequencia(), MKDIR, "3o mkdir", 8), TAM_PACOTE, 0);
+    send(soquete, make_packet(sequencia(), MKDIR, "4o mkdir", 8), TAM_PACOTE, 0);
+    sleep(1);
+    recv(soquete, buffer, TAM_PACOTE, 0);
+    // buff = recebe(soquete, &client_seq, &nxts_serve);
+    perror("ERRO ");
+    read_packet(buffer);
+    send(soquete, make_packet(sequencia(), CD,    "emfim cd", 8), TAM_PACOTE, 0);
+*/
+
     while(1){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
@@ -167,7 +181,7 @@ int response_GET(unsigned char* resposta_srv, char *file){
     free(resposta_cli);
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    janela_recebe4(soquete, file, &client_seq, &nxts_serve);
+    recebe_sequencial(soquete, file, &client_seq, &nxts_serve);
 
     return true;
 }

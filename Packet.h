@@ -70,14 +70,23 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ stream functions ================ */
-unsigned char** chunck_file(unsigned int start_seq, char *file, int *arr_size);
+unsigned char** chunck_file(unsigned int start_seq, FILE *file, int *arr_size);
 int build_file(char *file, unsigned char **packet_array, int array_size);
 void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq);
 void janela_envia4 (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
+int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq);
+int envia_sequencial (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
+
+int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int n_bytes);
+unsigned char *recebe_msg(int socket);
+
+unsigned int moven(unsigned int *sequence, int n);
+unsigned int next(unsigned int *sequence);
 
 unsigned char *envia(int soquete, unsigned char* packet, unsigned int *expected_seq);
 unsigned char *recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq);
-
+char *ptoa(unsigned char *pacote);
+char *itoa(int sequencia);
 
 /* ================ packet functions ================ */
 unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
