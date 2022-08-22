@@ -48,8 +48,8 @@ unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int by
     // CRIA PACOTE //
     // aloca memoria para o pacote
     int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
-    unsigned char *packet   =   malloc(TAM_PACOTE);                         // aloca mem pro pacote, retorna string
-    memset(packet, 0, TAM_PACOTE);                                          // limpa lixo na memoria alocada
+    unsigned char *packet   =   calloc(TAM_PACOTE, 1);           // aloca mem pro pacote, retorna string
+    // memset(packet, 0, TAM_PACOTE);                                          // limpa lixo na memoria alocada
 
     // define informacao do header
     envelope_packet header_t;
@@ -90,6 +90,12 @@ int free_packet(unsigned char* packet)
 
 /* =========================== FUNCOES AUXILIARES =========================== */
 
+void data_asint(unsigned char *buffer){
+    int len = get_packet_tamanho(buffer);
+    for(int i = 0; i < len; i++)
+        printf("%d|", buffer[3+i]);
+    printf("fim\n");
+}
 // printa o header + data + paridade do pacote
 void read_packet(unsigned char *buffer)
 {   // destrincha o pacote para formato legivel
@@ -98,7 +104,9 @@ void read_packet(unsigned char *buffer)
     printf("packet Tamanho  : %d\n", get_packet_tamanho(buffer));
     printf("packet Sequencia: %d\n", get_packet_sequence(buffer));
     printf("packet Tipo     : %s\n", get_type_packet(buffer));              // string com tipo
-    printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
+    // printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
+    printf("packet Dados: ");
+    data_asint(buffer);
     printf("packet Paridade : %d\n", get_packet_parity(buffer));            // paridade int 8bits   (pacote[-1])
     printf("Total-----------: %d Bytes\n", get_packet_len(buffer));         // tamanho total do pacote
 
@@ -151,14 +159,7 @@ int calc_packet_parity(unsigned char *buffer)
 }
 
 int check_parity(unsigned char* buffer){
-    int paradis = 0;
-    int header = sizeof(envelope_packet);
-    int len = get_packet_tamanho(buffer) + header;
-
-    for(int i = header; i < len; i++)   // desde o inicio ate o final de dados (exclui fill)
-        paradis ^= buffer[i];
-
-    return paradis == get_packet_parity(buffer);
+    return calc_packet_parity(buffer) == get_packet_parity(buffer);
 }
 
 // se paridade nao bate, retorna falso, c.c. verdadeiro
