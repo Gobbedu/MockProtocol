@@ -322,7 +322,7 @@ void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int 
 
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
-    int eof, leu_sz, max_data, blocks = 0;
+    int leu_sz, max_data, blocks = 0;
     unsigned char *resposta;
     char *data;
     int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
@@ -335,10 +335,10 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     data = calloc(max_data, sizeof(char));                      // info q vai no campo dados no pacote
     
     // QUEBRA ARQUIVO EM BLOCOS //
-    eof = false;
     printf("chunking...\n");
-    while(!eof){  
+    while(1){  
         leu_sz = fread((void *)data, sizeof(char), max_data, file);
+        printf("leu %d bytes do arquivo\n", leu_sz);
         leu_bytes += leu_sz;
         blocks++;
         // VALIDA LEITURA //
@@ -353,11 +353,10 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
             return false;
         }
 
-        if(feof(file)){  // termina se fim do arquivo
-            printf("src feof break\n");
-            eof = true;
-            continue;
-        }
+        // if(feof(file)){  // termina se fim do arquivo
+        //     printf("src feof break\n");
+        //     break;
+        // }
         
         resposta = recebe_msg(socket);
         if(!resposta){  // se NULL
@@ -376,6 +375,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
+                printf("caiu no NACK\n");
                 if(fseek(file, (long) (-leu_sz), SEEK_CUR) != 0){
                     perror("fseek == 0");
                     free(resposta);
@@ -384,10 +384,8 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
                 break;
             
             case ACK:   // continua loop normalmente
+                printf("caiu no ACK\n");
                 break;
-
-            case FIM:   
-                return true;
 
             default:
                 printf("tipo nao definido\n");
@@ -430,8 +428,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     }
 
     // MONTA ARQUIVO //
-    try = 0;            // numero de vezes que vai esperar resposta
-    while(try < 3){    // soh para se recebe pacote com tipo FIM
+    while(try < 1){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
         pacote = recebe_msg(socket);
         if(!pacote){
@@ -442,7 +439,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
 
         // FIM //
         if(get_packet_type(pacote) == FIM){
-            *other_seq = ((*other_seq)+1)%MAX_SEQUENCE;
+            next(other_seq);
             free(pacote);
             break;
         }
@@ -468,7 +465,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         }
         
         // ACK // (soh e possivel retornar NACK & ACK transmitindo dados)
-        *other_seq = ((*other_seq)+1)%MAX_SEQUENCE;
+        next(other_seq);
 
         // data comeca 3 bytes depois do inicio
         len_data  = get_packet_tamanho(pacote);         // tamanho em bytes a escrever no arquivo
@@ -479,12 +476,13 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         }
         seq = ptoa(pacote);
         envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
+        printf("enviou ACK\n");
 
         free(pacote);
     }
 
     fclose(dst);
-    if(try == 3){
+    if(try == 1){
         printf("algo deu errado com recebe sequencial..\n");
         return false;
     }
