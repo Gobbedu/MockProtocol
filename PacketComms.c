@@ -325,7 +325,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     int leu_sz, max_data, blocks = 0;
     unsigned char resposta[TAM_PACOTE];
     char *data;
-    int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
+    int try, bytes, leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
     printf("envia sequencial start\n");
     rewind(file);
@@ -336,7 +336,8 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     
     // QUEBRA ARQUIVO EM BLOCOS //
     printf("chunking...\n");
-    while(1){  
+    try = 0;
+    while(try < NTENTATIVAS){  
         leu_sz = fread((void *)data, sizeof(char), max_data, file);
         printf("leu %d bytes do arquivo\n", leu_sz);
         leu_bytes += leu_sz;
@@ -359,26 +360,26 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         // }
         
         // ORIGINAL Q FUNCIONA
-        int bytes = recv(socket, resposta, TAM_PACOTE, 0);
+        // int bytes = recv(socket, resposta, TAM_PACOTE, 0);
       
         // tentar fazer do jeito certo abaixo
-        // bytes = recv(socket, resposta, TAM_PACOTE, 0);
-        // if(errno == EAGAIN || errno == EWOULDBLOCK){     
-        //     fprintf(stderr, "tentativa (%d), ", try+1);   
-        //     perror("ERRO timeout recebe_msg()");
-        //     try++;
-        //     continue;
-        // }
-        // if(bytes <= 0){
-        //     try++;
-        //     perror("ERRO ao receber pacote em recebe_sequencial");
-        //     continue;
-        // }
-        // if(!is_our_packet(pacote)){
-        //     try++;
-        //     continue;
-        // }try = 0;
-        // read_packet(pacote);
+        bytes = recv(socket, resposta, TAM_PACOTE, 0);
+        if(errno == EAGAIN || errno == EWOULDBLOCK){     
+            fprintf(stderr, "tentativa (%d), ", try+1);   
+            perror("ERRO timeout recebe_msg()");
+            try++;
+            continue;
+        }
+        if(bytes <= 0){
+            try++;
+            perror("ERRO ao receber pacote em recebe_sequencial");
+            continue;
+        }
+        if(!is_our_packet(resposta)){
+            try++;
+            continue;
+        }try = 0;
+        read_packet(resposta);
 
         // resposta = recebe_msg(socket);
         // if(!resposta){  // se NULL
@@ -393,7 +394,6 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
             printf("recebe_msg() recebeu mensagem com erro na paridade\n");
             return false;
         }
-        read_packet(resposta);
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
