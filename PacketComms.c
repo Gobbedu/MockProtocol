@@ -323,7 +323,7 @@ void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int 
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
     int leu_sz, max_data, blocks = 0;
-    unsigned char *resposta;
+    unsigned char resposta[TAM_PACOTE];
     char *data;
     int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
@@ -358,11 +358,12 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         //     break;
         // }
         
-        resposta = recebe_msg(socket);
-        if(!resposta){  // se NULL
-            printf("envia sequencial recebeu resposta NULL\n");
-            return false;
-        }
+        // resposta = recebe_msg(socket);
+        int bytes = recv(socket, resposta, TAM_PACOTE, 0);
+        // if(!resposta){  // se NULL
+        //     printf("envia sequencial recebeu resposta NULL\n");
+        //     return false;
+        // }
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
             printf("recebe_mgs() em envia sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
             return false; // por enquanto nao corrige NACK ou ACK
@@ -378,7 +379,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
                 printf("caiu no NACK\n");
                 if(fseek(file, (long) (-leu_sz), SEEK_CUR) != 0){
                     perror("fseek == 0");
-                    free(resposta);
+                    // free(resposta);
                     return false;
                 }
                 break;
@@ -389,11 +390,11 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
             default:
                 printf("tipo nao definido\n");
-                free(resposta);
+                // free(resposta);
                 return false;
         }
-
-        free(resposta);
+        next(other_seq);
+        // free(resposta);
     }
     // ajeitar ultimo pacote
     if(!envia_msg(socket, this_seq, FIM, NULL, 0)){
