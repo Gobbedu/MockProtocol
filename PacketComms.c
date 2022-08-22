@@ -410,8 +410,9 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
 int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // unsigned char resposta[TAM_PACOTE];
-    int wrote, len_data, try;
-    unsigned char *pacote;
+    int wrote, len_data, try, bytes;
+    unsigned char pacote[TAM_PACOTE];
+    // unsigned char *pacote;
     char *seq;
 
     printf("recebe sequencial start\n");
@@ -428,10 +429,27 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     }
 
     // MONTA ARQUIVO //
-    while(try < 1){    // soh para se recebe pacote com tipo FIM
+    try = 0;
+    while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
-        pacote = recebe_msg(socket);
-        if(!pacote){
+        // pacote = recebe_msg(socket);
+        // if(!pacote){
+        //     try = 1;
+        //     break;
+        // }
+        bytes = recv(socket, pacote, TAM_PACOTE, 0);
+        if(errno == EAGAIN || errno == EWOULDBLOCK){     
+            fprintf(stderr, "tentativa (%d), ", try+1);   
+            perror("ERRO timeout recebe_msg()");
+            try++;
+            continue;
+        }
+        if(bytes <= 0){
+            try++;
+            perror("ERRO ao receber pacote em recebe_sequencial");
+            continue;
+        }
+        if(!is_our_packet(pacote)){
             try++;
             continue;
         }try = 0;
@@ -440,27 +458,27 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         // FIM //
         if(get_packet_type(pacote) == FIM){
             next(other_seq);
-            free(pacote);
+            // free(pacote);
             break;
         }
 
         // NACK //
         if (!check_sequence(pacote, *other_seq)){
                 // paridade diferente, dado: (sequencia esperada)
-                printf("recebe4 recebeu pacote com erro de paridade, NACK\n");
-                seq = itoa(*other_seq);
-                envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
-                empty_netbuff(socket);
-                free(pacote);
-                continue;   // volta a ouvir
-        }
-        if(!check_parity(pacote)){
-                // sequencia diferente, dado:(sequencia atual)
                 printf("recebe4 recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
                 empty_netbuff(socket);
-                free(pacote);
+                // free(pacote);
+                continue;   // volta a ouvir
+        }
+        if(!check_parity(pacote)){
+                printf("recebe4 recebeu pacote com erro de paridade, NACK\n");
+                // sequencia diferente, dado:(sequencia atual)
+                seq = itoa(*other_seq);
+                envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
+                empty_netbuff(socket);
+                // free(pacote);
                 continue;   // volta a ouvir
         }
         
@@ -478,7 +496,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
         printf("enviou ACK\n");
 
-        free(pacote);
+        // free(pacote);
     }
 
     fclose(dst);
@@ -643,10 +661,10 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned char *resposta;
+    unsigned char *pacote, resposta[TAM_PACOTE];
     int bytes, tentativas;
 
-    resposta = calloc(TAM_PACOTE, sizeof(unsigned char));
+    // resposta = calloc(TAM_PACOTE, sizeof(unsigned char));
     tentativas = 0;
     while(tentativas < NTENTATIVAS){
         bytes = recv(socket, (void*) resposta, TAM_PACOTE, 0); 
@@ -682,7 +700,9 @@ unsigned char *recebe_msg(int socket)
     }
 
     // deu certo, um pacote foi lido
-    return resposta;
+    pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+    memcpy(pacote, resposta, TAM_PACOTE);
+    return pacote;
 }
 
 
