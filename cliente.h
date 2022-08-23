@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 int cliente_sinaliza(char *comando, int tipo);
-int response_GET(unsigned char* resposta, char *parametro);
+int response_GET(char * resposta, char *parametro);
 void client_switch(char* comando);
 // void get(char *comando, int tipo);
 

@@ -26,12 +26,12 @@ int main()
 {
     // int bytes;
     // int check;
-    // unsigned char *resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
-    // unsigned char buffer[TAM_PACOTE];
-    unsigned char* pacote;
-    // soquete = ConexaoRawSocket("lo");
+    // char*resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
+    // charbuffer[TAM_PACOTE];
+     char* pacote;
+    soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("eno1");
+    // soquete = ConexaoRawSocket("eno1");
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -64,7 +64,7 @@ int main()
     printf("servidor terminado\n");
 }
 
-void server_switch(unsigned char* buffer)
+void server_switch( char* buffer)
 {
     int tipo_lido = get_packet_type(buffer);
 
@@ -116,9 +116,9 @@ void server_switch(unsigned char* buffer)
 }
 
 
-void cdc(unsigned char* buffer){
+void cdc( char* buffer){
     int resultado, bytes, ret;
-    unsigned char *resposta;
+     char *resposta;
     char *cd, flag[1];
     cd = (char *) get_packet_data(buffer);
     char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
@@ -162,9 +162,9 @@ void cdc(unsigned char* buffer){
 // trata_tipos: case switch p/ cada ENUM uma funcao
 // Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
-void mkdirc(unsigned char* buffer){
+void mkdirc( char* buffer){
     int bytes, ret, resultado;
-    unsigned char *resposta;
+     char *resposta;
     char *mkdir, flag[1];
 
     mkdir = get_packet_data(buffer);
@@ -200,11 +200,11 @@ void mkdirc(unsigned char* buffer){
     free(mkdir);
 }
 
-void get(unsigned char *buffer){
+void get( char *buffer){
     // int bytes, resultado;
     int bytes;
-    // unsigned char *resposta_srv, *resposta_cli;
-    unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
+    // char*resposta_srv, *resposta_cli;
+     char *resposta_srv, resposta_cli[TAM_PACOTE];
     char *get, *mem, flag;
 
     get = get_packet_data(buffer);  // arquivo a abrir

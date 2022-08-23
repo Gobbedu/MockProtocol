@@ -8,10 +8,10 @@
 
 struct stat st;
 
-void server_switch(unsigned char* buffer);
-void cdc(unsigned char* buffer);
-void mkdirc(unsigned char* buffer);
-void get(unsigned char *buffer);
+void server_switch(char * buffer);
+void cdc(char * buffer);
+void mkdirc(char * buffer);
+void get(char*buffer);
 
 unsigned int sequencia(void);
 

@@ -13,8 +13,8 @@ int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    // soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
-    soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -23,7 +23,7 @@ int main(){
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
    /* char buffer[TAM_PACOTE];
-    unsigned char *buff;
+    char*buff;
     send(soquete, make_packet(sequencia(), MKDIR, "1o mkdir", 8), TAM_PACOTE, 0);
     send(soquete, make_packet(sequencia(), MKDIR, "2o mkdir", 8), TAM_PACOTE, 0);
     send(soquete, make_packet(sequencia(), MKDIR, "3o mkdir", 8), TAM_PACOTE, 0);
@@ -132,9 +132,9 @@ void client_switch(char* comando){
 
 
 // talvez precise refatorar mais tarde (put & ls tb usam tipo desc_arq)
-int response_GET(unsigned char* resposta_srv, char *file){
+int response_GET(char * resposta_srv, char *file){
     // int bytes, resultado, mem_livre;
-    unsigned char *resposta_cli;
+    char*resposta_cli;
     int bytes, mem_livre;
     char pwd[PATH_MAX];
     int tamanho = 0;
@@ -198,12 +198,12 @@ int response_GET(unsigned char* resposta_srv, char *file){
 int cliente_sinaliza(char *parametro, int tipo)
 {
     // int bytes, timeout, lost_conn, resend;
-    // unsigned char resposta[TAM_PACOTE];
-    unsigned char *resposta;
+    // charresposta[TAM_PACOTE];
+    char*resposta;
     char* data;
 
     /* cria pacote com parametro para cd no server */
-    unsigned char *packet = make_packet(sequencia(), tipo, parametro, strlen(parametro));
+    char*packet = make_packet(sequencia(), tipo, parametro, strlen(parametro));
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
