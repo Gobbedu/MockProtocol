@@ -29,9 +29,9 @@ int main()
     // char*resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
     // charbuffer[TAM_PACOTE];
      char* pacote;
-    soquete = ConexaoRawSocket("lo");
+    // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
-    // soquete = ConexaoRawSocket("eno1");
+    soquete = ConexaoRawSocket("eno1");
 
     struct timeval tv;
     tv.tv_sec = 1;
