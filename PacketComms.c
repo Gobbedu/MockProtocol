@@ -312,6 +312,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         //     try = 1;
         //     break;
         // }
+        memset(pacote, 0, TAM_PACOTE);
         bytes = recv(socket, pacote, TAM_PACOTE, 0);
         // if(errno == EAGAIN || errno == EWOULDBLOCK){     
         //     fprintf(stderr, "tentativa (%d), ", try+1);   
@@ -319,8 +320,9 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         //     try++;
         //     continue;
         // }
-        if(bytes <= 0){
+        if(bytes != 67){
             try++;
+            printf("recebeu (%d) bytes, ", bytes);
             perror("ERRO ao receber pacote em recebe_sequencial");
             continue;
         }
@@ -511,17 +513,21 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
         return false;
     }
 
-    tentativas = 0;
-    while(tentativas < NTENTATIVAS){
+    // tentativas = 0;
+    // while(tentativas < NTENTATIVAS){
+    for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++)
+    {
         bytes = send(socket, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes <= 0){                                      // pega erros, se algum
-            fprintf(stderr, "(%d) tentativa, ", tentativas);   
-            perror("ERROR envia_msg() send <= 0");
-            tentativas++;
-            continue;
-        }
-        tentativas = 0;
-        break;  // enviou, termina loop
+        if(bytes == TAM_PACOTE)
+            break;
+        // {                                      // pega erros, se algum
+        //     fprintf(stderr, "(%d) tentativa, ", tentativas);   
+        //     perror("ERROR envia_msg() send <= 0");
+        //     tentativas++;
+        //     continue;
+        // }
+        // tentativas = 0;
+        // break;  // enviou, termina loop
     }
     if(tentativas == NTENTATIVAS){
         free(packet);
@@ -545,7 +551,7 @@ char*recebe_msg(int socket)
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
         bytes = recv(socket, buffer, TAM_PACOTE, 0);       // recebe dados do socket
-        if (bytes>0)
+        if (bytes == TAM_PACOTE)
             if (is_our_packet(buffer))
                 break;
     }
