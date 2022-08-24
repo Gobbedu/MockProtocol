@@ -1,9 +1,5 @@
 #include "Packet.h"
 
-/* estrutura do packet
- * MI 8b | Tamanho 6b | Sequencia 4b | Tipo 6b | Dados 0 - 63 bytes(6b tamanho) | Paridade 8b |||
- */
-
 // variaveis globais declaradas no .h, definidas no .c
 // respostas de erro no servidor
 char  dir_nn_E        = 'A', 
@@ -35,6 +31,9 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
         }
     }
 
+    print_bytes("DADOS recebidos para EMPACOTAR", dados, bytes_dados);
+    printf("\n");
+
     if(sequencia > MAX_SEQUENCE){
         printf("ERRO: tamanho da sequencia excede limite do pacote: %d\n", sequencia);
         return NULL;
@@ -47,9 +46,9 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
 
     // CRIA PACOTE //
     // aloca memoria para o pacote
-    int len_header          =   sizeof(envelope_packet);                    // tamanho do header (MI, tamanho, sequencia, tipo)
-    char*packet   =   calloc(TAM_PACOTE, 1);           // aloca mem pro pacote, retorna string
-    // memset(packet, 0, TAM_PACOTE);                                          // limpa lixo na memoria alocada
+    // int len_header          =   sizeof(envelope_packet);        // tamanho do header (MI, tamanho, sequencia, tipo)
+    char*packet   =   calloc(TAM_PACOTE, sizeof(char));         // aloca mem pro pacote, retorna string
+    // memset(packet, 0, TAM_PACOTE);                           // limpa lixo na memoria alocada
 
     // define informacao do header
     envelope_packet header_t;
@@ -67,13 +66,13 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
     packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
 
     for(int i = 0; i < bytes_dados; i++){   // calcula paridade somente dos dados
-        packet[len_header+i] = dados[i];    // salva 'data' no pacote 
+        packet[TAM_HEADER+i] = dados[i];    // salva 'data' no pacote 
         packet[TAM_PACOTE-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)
     }
 
     // complemento nao entra na paridade
     char fill = ' ';
-    for(int i = len_header+bytes_dados; i < TAM_PACOTE-1; i++)  // a partir de onde dados parou
+    for(int i = TAM_HEADER+bytes_dados; i < TAM_PACOTE-1; i++)  // a partir de onde dados parou
         packet[i] = fill;                                       // ate penultimo byte do packet
 
     return packet;
@@ -90,13 +89,6 @@ int free_packet(char * packet)
 
 /* =========================== FUNCOES AUXILIARES =========================== */
 
-void data_asint(char*buffer){
-    int len = get_packet_tamanho(buffer);
-    printf("data of size: (%d)\n", len);
-    for(int i = 0; i < len; i++)
-        printf("%d|", buffer[3+i]);
-    printf("fim\n");
-}
 // printa o header + data + paridade do pacote
 void read_packet(char*buffer)
 {   // destrincha o pacote para formato legivel
@@ -106,12 +98,9 @@ void read_packet(char*buffer)
     printf("packet Sequencia: %d\n", get_packet_sequence(buffer));
     printf("packet Tipo     : %s\n", get_type_packet(buffer));              // string com tipo
     // printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
-    printf("packet Dados: ");
-    data_asint(buffer);
+    print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer));
     printf("packet Paridade : %d\n", get_packet_parity(buffer));            // paridade int 8bits   (pacote[-1])
     printf("Total-----------: %d Bytes\n", get_packet_len(buffer));         // tamanho total do pacote
-
-    return;
 }
 
 int is_our_packet(char*buffer)
@@ -200,7 +189,7 @@ int get_packet_type(char * buffer){
 char* get_packet_data(char * buffer){               // empurra ponteiro
     int size = get_packet_tamanho(buffer);
     char *data = malloc(size*sizeof(char));
-    strncpy(data, (char *)(buffer+sizeof(envelope_packet)), size);
+    memcpy(data, (buffer+TAM_HEADER), size);
     data[size] = '\0';
     return data;
 }
@@ -266,4 +255,11 @@ char *get_type_packet(char * buffer){
             return "nao especificado";
 			break;
 	}
+}
+
+void print_bytes(char* nome, char *buf, int n){
+    printf("%s ", nome);
+    for(int i = 0; i < 63; i++)
+        printf("%d,", buf[i]);
+    printf("fim\n");
 }

@@ -14,8 +14,14 @@
 
 // VAR GLOBAL //
 
-#define TAM_PACOTE      67
+/* estrutura do packet
+ * | MI 8b | Tamanho 6b | Sequencia 4b | Tipo 6b | Dados 0 - 63 bytes(6b tamanho) |  Paridade  8b  |
+ * {            24 bits = 3 bytes                }                                { 8 bits = 1 byte} // total 67 bytes
+ */
+
+#define TAM_PACOTE      67 // [0, 66]
 #define MAX_DADOS       63
+#define TAM_HEADER      3   
 #define MAX_SEQUENCE    16  // para usar em modulo, limite eh na verdade 15
 #define COMMAND_BUFF    100
 #define PATH_MAX        100
@@ -119,6 +125,6 @@ char *get_type_packet( char* buffer);
 void read_packet( char *buffer);
 int is_our_packet( char *buffer);
 int is_valid_type(int tipo);
-
+void print_bytes(char *nome, char *buf, int n);
 
 #endif
