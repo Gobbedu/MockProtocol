@@ -20,6 +20,14 @@ int soquete;
 unsigned int serv_seq = 10;   // current server sequence
 unsigned int nxts_cli = 0;   // expected next client sequence
 
+void print(char *buf){
+    for(int i = 0; i < 63; i++)
+        printf("%d,", buf[i]);
+    printf("fim\n");
+}
+
+
+
 
 /* sniff sniff */
 int main()
@@ -40,6 +48,24 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
+
+    // recv
+    char buf[63];
+    memset(buf, 0, 63);
+    recv(soquete, buf, 63, 0);
+    printf("tam buf: %ld\n", strlen(buf));
+
+    // recv
+    print(buf);
+    memset(buf, 0, 63);
+    recv(soquete, buf, 63, 0);
+    printf("tam buf: %ld\n", strlen(buf));
+    print(buf);
+
+
+
+
+/* da problema
     // recv
     char *dado = recebe_msg(soquete);
     read_packet(dado);
@@ -53,6 +79,7 @@ int main()
     tipo = (check_parity(dado)) == true ? ACK : NACK;
     envia_msg(soquete, &serv_seq, tipo, NULL, 0);
     free(dado);
+*/
 
     while(0){
         pacote = recebe(soquete, &serv_seq, &nxts_cli);
