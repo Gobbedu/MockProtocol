@@ -289,6 +289,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     char pacote[TAM_PACOTE];
     // char*pacote;
     char *seq;
+    char *gambiarra;
 
     printf("recebe sequencial start\n");
 
@@ -321,10 +322,17 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         //     continue;
         // }
         if(bytes != 67){
+            if(bytes == 63){
+                gambiarra = make_packet(*other_seq, DADOS, pacote, bytes);
+                memcpy(pacote, gambiarra, TAM_PACOTE);
+                free(gambiarra);
+            }
+            else{
             try++;
             printf("recebeu (%d) bytes, ", bytes);
             perror("ERRO ao receber pacote em recebe_sequencial");
             continue;
+            }
         }
         if(!is_our_packet(pacote)){
             try++;
