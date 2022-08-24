@@ -157,169 +157,6 @@ void empty_netbuff(int socket)
         recv(socket, buffer, TAM_PACOTE, 0);
 }
 
-/*
-void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq)
-{
-    char*resposta, buffer[TAM_PACOTE];
-    int type, bytes, len_data, wrote, i;
-    FILE *escreve_file;
-    char *dest, *seq;
-
-    printf("janela recebe de 4 pacotes start\n");
-    dest = calloc(6+strlen(file), sizeof(char));
-    sprintf(dest, "(copy)%s", file);
-    
-    escreve_file = fopen(dest, "w");
-    free(dest);
-
-    type = -1;            
-    while(type != FIM){     // sai do loop se tipo da mensagem != FIM
-        i = 0;
-        // le no maximo 4 pacotes nossos & responde 
-        while(i < 4 && recv(socket, buffer, TAM_PACOTE, MSG_PEEK) > 0){
-            bytes = recv(socket, buffer, TAM_PACOTE, 0);
-            
-            // VALIDA //
-            if(bytes <= 0){
-                perror("erro recebe4");
-                continue;
-            }
-            if (!is_our_packet(buffer)) continue;  // se nao eh nosso pacote, ignora
-
-            read_packet(buffer);
-            type = get_packet_type(buffer);
-            if(type == FIM)
-                break;
-
-            // NACK //
-            if (!check_sequence((char *) buffer, *other_seq) ||
-                !check_parity(buffer))
-            {
-                if(!check_parity(buffer)){  // dado:(sequencia que esperava)
-                    // paridade diferente
-                    printf("recebe4 recebeu pacote com erro de paridade, NACK\n");
-                    seq = ptoa(buffer);
-                    resposta = make_packet(*this_seq, NACK, seq, 2); free(seq);
-                }
-                else{   //  dado:(sequencia atual)
-                    // sequencia diferente
-                    printf("recebe4 recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(buffer));
-                    seq = itoa(*other_seq);
-                    resposta = make_packet(*this_seq, NACK, seq, 2); free(seq);
-                }
-            
-                // responde NACK & limpa buffer da placa de rede (vai receber novo)
-                bytes = send(socket, resposta, TAM_PACOTE, 0);  
-                if(bytes <= 0){
-                    perror("return, envia4 nack error");
-                    return;
-                }
-                *this_seq = ((*this_seq)+1)%MAX_SEQUENCE;
-
-                empty_netbuff(socket);
-
-                free(resposta);
-                break;                                       
-            }
-
-            // ACK //
-            *other_seq = ((*other_seq)+1)%MAX_SEQUENCE;
-            seq = itoa(get_packet_sequence(buffer));        // salva ultima sequencia aceita
-            len_data  = get_packet_tamanho(buffer);         // tamanho em bytes a escrever no arquivo
-
-            // data comeca 3 bytes depois do inicio
-            wrote = fwrite((void*) (buffer+3), sizeof(char), len_data, escreve_file);
-            if(wrote == 0){
-                perror("return, build wrote 0 bytes, ");
-                return;
-            }
-            i++;
-        }
-        // leu 4 ou acabou buffer, responde ok ultima seq
-        resposta = make_packet(*this_seq, ACK, seq, 2);
-
-    }
-
-}
-
-void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
-{
-    char**packet_arr, resposta[TAM_PACOTE];
-    int len_arr, base, bytes, seq, i;
-    int timeo, lost_con;
-    char *data;
-
-    printf("janela envia 4 pacotes start\n");
-
-    rewind(file);       // aponta para o inicio do arquivo
-    packet_arr = chunck_file((*this_seq), file, &len_arr);
-
-    i = 0;
-    lost_con = false;
-    while((i < len_arr) && (lost_con < 3))
-    {  
-        base = get_packet_sequence(packet_arr[i]);
-        for(int x = 0; (i+x < len_arr) && x < 4; x++)
-            send(socket, packet_arr[i+x], TAM_PACOTE, 0);
-        // send(socket, packet_arr[i+1], TAM_PACOTE, 0);
-        // send(socket, packet_arr[i+2], TAM_PACOTE, 0);
-        // send(socket, packet_arr[i+3], TAM_PACOTE, 0);
-
-        while(1){
-            if(timeo == 3){
-                lost_con++;
-                break;
-            }
-
-            bytes = recv(socket, resposta, TAM_PACOTE, 0);
-            if(errno == EAGAIN || errno == EWOULDBLOCK){    // pega timeout
-                // printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
-                perror("ERROR recv envia4");
-                timeo++;
-                continue;
-            }
-
-            // recebu ack ou nack //
-            // VERIFICA //
-            if (bytes <= 0) continue;                                   // algum erro no recv
-            if (!is_our_packet((char *) resposta)) continue;    // nao eh nosso pacote
-            if (!check_sequence(resposta, *other_seq)){                 // sequencia incorreta
-                printf("envia4 expected %d but got %d as a sequence, ignore\n", *other_seq, get_packet_sequence(resposta));
-                continue;
-            }
-            read_packet(resposta);
-
-            data = get_packet_data(resposta);       // valor da sequencia em char*
-            seq = n_forward(base, atoi(data));      // data estah a (seq) janelas pra frente da (base)
-            free(data);
-
-            switch (get_packet_type(resposta))
-            {
-            case NACK:          // perdeu sequencia x, reenvia x
-                i += seq;       // aceita sequencia < x
-                timeo = lost_con = 0;
-                break;
-            
-            case ACK:           // aceitou sequencia x, entao envia x+1 
-                i += seq + 1;   // aceita sequencia <= x
-                timeo = lost_con = 0;
-                break;
-            }
-        }
-    }
-
-    if(lost_con == 3)
-        printf("Erro de comunicacao, servidor nao responde :(\n");
-    else
-        printf("arquivo foi enviado com sucesso!\n");
-
-    
-    for(int i = 0; i < len_arr; i++)
-        free(packet_arr[i]);
-    free(packet_arr);
-}
-*/
-
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
     int leu_sz, max_data, blocks = 0;
@@ -505,7 +342,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
                 printf("recebe recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
-                empty_netbuff(socket);
+                // empty_netbuff(socket);
                 
                 // free(pacote);
                 continue;   // volta a ouvir
@@ -515,7 +352,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
                 // sequencia diferente, dado:(sequencia atual)
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
-                empty_netbuff(socket);
+                // empty_netbuff(socket);
                 
                 // free(pacote);
                 continue;   // volta a ouvir
