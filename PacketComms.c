@@ -286,8 +286,8 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try, bytes;
-    char pacote[TAM_PACOTE];
-    // char*pacote;
+    // char pacote[TAM_PACOTE];
+    char *pacote;
     char *seq;
     char *gambiarra;
 
@@ -313,31 +313,33 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
         //     try = 1;
         //     break;
         // }
-        memset(pacote, 0, TAM_PACOTE);
-        bytes = recv(socket, pacote, TAM_PACOTE, 0);
-        // if(errno == EAGAIN || errno == EWOULDBLOCK){     
-        //     fprintf(stderr, "tentativa (%d), ", try+1);   
-        //     perror("ERRO timeout recebe_msg()");
+        // memset(pacote, 0, TAM_PACOTE);
+        // bytes = recv(socket, pacote, TAM_PACOTE, 0);
+        // // if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        // //     fprintf(stderr, "tentativa (%d), ", try+1);   
+        // //     perror("ERRO timeout recebe_msg()");
+        // //     try++;
+        // //     continue;
+        // // }
+        // if(bytes != 67){
+        //     // if(bytes == 63){
+        //         gambiarra = make_packet(*other_seq, DADOS, pacote, bytes);
+        //         memcpy(pacote, gambiarra, TAM_PACOTE);
+        //         free(gambiarra);
+        //     // else{
+        //     try++;
+        //     printf("recebeu (%d) bytes, ", bytes);
+        //     perror("ERRO ao receber pacote em recebe_sequencial");
+        //     continue;
+        //     }
+        //     // }
+        // // }
+        // if(!is_our_packet(pacote)){
         //     try++;
         //     continue;
-        // }
-        if(bytes != 67){
-            if(bytes == 63){
-                gambiarra = make_packet(*other_seq, DADOS, pacote, bytes);
-                memcpy(pacote, gambiarra, TAM_PACOTE);
-                free(gambiarra);
-            }
-            else{
-            try++;
-            printf("recebeu (%d) bytes, ", bytes);
-            perror("ERRO ao receber pacote em recebe_sequencial");
-            continue;
-            }
-        }
-        if(!is_our_packet(pacote)){
-            try++;
-            continue;
-        }try = 0;
+        // }try = 0;
+        pacote = recebe_msg(socket);
+        if(!pacote) continue;
         read_packet(pacote);
 
         // FIM //
