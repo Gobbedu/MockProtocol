@@ -159,17 +159,17 @@ void empty_netbuff(int socket)
 
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
-    int leu_sz, max_data, blocks = 0;
-    char resposta[TAM_PACOTE];
-    char *data;
+    int leu_sz, blocks = 0;
+    // char resposta[TAM_PACOTE];
+    char *resposta;
     int try, bytes, leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
     printf("envia sequencial start\n");
     rewind(file);
 
     // LIMITE CAMPO DADOS //
-    max_data = TAM_PACOTE - sizeof(envelope_packet) - 1;        // total - header - paridade
-    data = calloc(max_data, sizeof(char));                      // info q vai no campo dados no pacote
+    int max_data = TAM_PACOTE - sizeof(envelope_packet) - 1;        // total - header - paridade
+    char *data = calloc(max_data, sizeof(char));                      // info q vai no campo dados no pacote
     
     // QUEBRA ARQUIVO EM BLOCOS //
     printf("chunking...\n");
@@ -208,8 +208,13 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
       
         // tentar fazer do jeito certo abaixo
 
+        resposta = recebe_msg(socket);
+        if(!resposta){
+            printf("timeo on receiving resposta (ACK, NACK)\n");
+            continue;
+        }
         // while(try < NTENTATIVAS){
-            bytes = recv(socket, resposta, TAM_PACOTE, 0);
+            // bytes = recv(socket, resposta, TAM_PACOTE, 0);
         //     if(errno == EAGAIN || errno == EWOULDBLOCK){     
         //         fprintf(stderr, "tentativa (%d), ", try+1);   
         //         perror("ERRO timeout recebe_msg()");
@@ -217,17 +222,17 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         //         continue;
         //     }
         // }
-            if(bytes <= 0){
-                try++;
-                moven(this_seq, -1);
-                perror("ERRO ao receber pacote em recebe_sequencial");
-                continue;
-            }
-            if(!is_our_packet(resposta)){
-                moven(this_seq, -1);
-                try++;
-                continue;
-            }try = 0;
+            // if(bytes <= 0){
+            //     try++;
+            //     moven(this_seq, -1);
+            //     perror("ERRO ao receber pacote em recebe_sequencial");
+            //     continue;
+            // }
+            // if(!is_our_packet(resposta)){
+            //     moven(this_seq, -1);
+            //     try++;
+            //     continue;
+            // }try = 0;
             // break;
         read_packet(resposta);
 
@@ -251,7 +256,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
                 printf("caiu no NACK\n");
                 if(fseek(file, (long) (-leu_sz), SEEK_CUR) != 0){
                     perror("fseek == 0");
-                    // free(resposta);
+                    free(resposta);
                     return false;
                 }
                 moven(this_seq, -1);
@@ -264,11 +269,11 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
             default:
                 printf("tipo nao definido\n");
-                // free(resposta);
+                free(resposta);
                 return false;
         }
         next(other_seq);
-        // free(resposta);
+        free(resposta);
     }
     // ajeitar ultimo pacote
     if(!envia_msg(socket, this_seq, FIM, NULL, 0)){
@@ -535,6 +540,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
     }
 
     next(this_seq);
+    printf("sent (%d) bytes\n", bytes);
     read_packet(packet);
     free(packet);
     return true;
@@ -551,9 +557,12 @@ char*recebe_msg(int socket)
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
         bytes = recv(socket, buffer, TAM_PACOTE, 0);       // recebe dados do socket
-        if (bytes == TAM_PACOTE)
+        if(bytes == 63)
+            data_asint(buffer);
+        else if (bytes == TAM_PACOTE)
             if (is_our_packet(buffer))
                 break;
+        
     }
 
     // nao recebeu pacote valido

@@ -92,6 +92,7 @@ int free_packet(char * packet)
 
 void data_asint(char*buffer){
     int len = get_packet_tamanho(buffer);
+    printf("data of size: (%d)\n", len);
     for(int i = 0; i < len; i++)
         printf("%d|", buffer[3+i]);
     printf("fim\n");

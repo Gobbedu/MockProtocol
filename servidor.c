@@ -40,7 +40,21 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
-    while(1){
+    // recv
+    char *dado = recebe_msg(soquete);
+    read_packet(dado);
+    // send
+    int tipo = (check_parity(dado)) == true ? ACK : NACK;
+    envia_msg(soquete, &serv_seq, tipo, NULL, 0);
+    // recv
+    dado = recebe_msg(soquete);
+    read_packet(dado);
+    // send
+    tipo = (check_parity(dado)) == true ? ACK : NACK;
+    envia_msg(soquete, &serv_seq, tipo, NULL, 0);
+    free(dado);
+
+    while(0){
         pacote = recebe(soquete, &serv_seq, &nxts_cli);
         if(!pacote) 
             continue;
