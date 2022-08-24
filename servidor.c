@@ -54,7 +54,7 @@ int main()
     memset(buf, 0, 63);
     recv(soquete, buf, 63, 0);
     printf("tam buf: %ld\n", strlen(buf));
-
+    print(buf);
     // recv
     print(buf);
     memset(buf, 0, 63);
