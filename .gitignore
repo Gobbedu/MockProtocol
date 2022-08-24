@@ -2,11 +2,11 @@
 teste*
 a.out
 *.o
+*.png
+*.mkv
+*.txt
+*.mp4
+*.mp3
+(copy)*
 cliente
 servidor
-Rick*
-(copy)*
-*.txt
-rick.mp4
-seila.mp4
-yen.mp3

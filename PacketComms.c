@@ -341,6 +341,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     int enviou = true;
     while(tentativas < NTENTATIVAS){  
         if(enviou){
+        memset(data, 0, max_data);
         leu_sz = fread((void *)data, sizeof(char), max_data, file);
         printf("leu %d bytes do arquivo\n", leu_sz);
         leu_bytes += leu_sz;
@@ -701,9 +702,27 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 char*recebe_msg(int socket)
 {
-    char*pacote, resposta[TAM_PACOTE];
-    int bytes, tentativas;
+    char buffer[TAM_PACOTE];
+    int bytes, i;
 
+    // VERIFICA //
+    for(i = 0; i < NTENTATIVAS; i++){
+        bytes = recv(socket, buffer, TAM_PACOTE, 0);       // recebe dados do socket
+        if (bytes>0)
+            if (is_our_packet(buffer))
+                break;
+    }
+
+    // nao recebeu pacote valido
+    if(i == NTENTATIVAS) 
+        return NULL;
+
+    // recebeu pacote //
+    char*pacote = calloc(TAM_PACOTE, sizeof(char ));
+    memcpy(pacote, buffer, TAM_PACOTE);
+    return pacote;
+
+/*
     // resposta = calloc(TAM_PACOTE, sizeof(char ));
     tentativas = 0;
     while(tentativas < NTENTATIVAS){
@@ -743,6 +762,7 @@ char*recebe_msg(int socket)
     pacote = calloc(TAM_PACOTE, sizeof(char ));
     memcpy(pacote, resposta, TAM_PACOTE);
     return pacote;
+    */
 }
 
 
