@@ -567,9 +567,14 @@ char*recebe_msg(int socket)
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
         bytes = recv(socket, buffer, TAM_PACOTE, 0);       // recebe dados do socket
-        if (bytes == TAM_PACOTE)
+        if (bytes == TAM_PACOTE){
             if (is_our_packet(buffer))
                 break;
+        }
+        else if (bytes == 63){
+            if(is_our_packet(buffer))
+                print_bytes("RECV RECEBEU 63", buffer, 63);
+        }
         
     }
 

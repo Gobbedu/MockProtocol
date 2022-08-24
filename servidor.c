@@ -48,7 +48,7 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
-
+/* funciona 
     // recv
     char buf[63];
     memset(buf, 0, 63);
@@ -61,25 +61,30 @@ int main()
     recv(soquete, buf, 63, 0);
     printf("tam buf: %ld\n", strlen(buf));
     print(buf);
+*/
 
 
 
 
 /* da problema
-    // recv
-    char *dado = recebe_msg(soquete);
-    read_packet(dado);
-    // send
-    int tipo = (check_parity(dado)) == true ? ACK : NACK;
-    envia_msg(soquete, &serv_seq, tipo, NULL, 0);
-    // recv
-    dado = recebe_msg(soquete);
-    read_packet(dado);
-    // send
-    tipo = (check_parity(dado)) == true ? ACK : NACK;
-    envia_msg(soquete, &serv_seq, tipo, NULL, 0);
-    free(dado);
 */
+    // recv
+    // char *dado = recebe_msg(soquete);
+    char dado[TAM_PACOTE];
+    memset(dado, 255, TAM_PACOTE);
+    if(recv(soquete, dado, TAM_PACOTE, 0) > 0)
+        print_bytes("recv recebeu", dado+TAM_HEADER, TAM_PACOTE);
+    // free(dado);
+    // sleep(1);
+    printf("\n\n");
+    // recv
+    // char *dado2 = recebe_msg(soquete);
+    char dado2[TAM_PACOTE];
+    memset(dado2, 255, TAM_PACOTE);
+    if(recv(soquete, dado, TAM_PACOTE, 0) > 0)
+        print_bytes("recv recebeu", dado2+TAM_HEADER, TAM_PACOTE);
+    // free(dado2);
+
 
     while(0){
         pacote = recebe(soquete, &serv_seq, &nxts_cli);
