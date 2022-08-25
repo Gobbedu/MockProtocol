@@ -289,11 +289,10 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
 int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
-    int wrote, len_data, try, bytes;
+    int wrote, len_data, try;
     // char pacote[TAM_PACOTE];
     char *pacote;
     char *seq;
-    char *gambiarra;
 
     printf("recebe sequencial start\n");
 

@@ -20,7 +20,7 @@ char  dir_nn_E        = 'A',
 /* cria e seta pacote inteiro do zero, retorna nullo se houve ERRO
  * compoe enquadramento & calculo de paridade
  */
-unsigned char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados)
+char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados)
 {
     // VALIDA //
     if(dados)
@@ -40,7 +40,7 @@ unsigned char * make_packet(unsigned int sequencia, int tipo, char* dados, int b
     }
 
     // CRIA PACOTE //
-    unsigned char *packet = calloc(TAM_PACOTE, sizeof(char));         // aloca mem pro pacote, retorna string
+    char *packet = calloc(TAM_PACOTE, sizeof(char));         // aloca mem pro pacote, retorna string
 
     // define informacao do header
     envelope_packet header_t;
