@@ -40,8 +40,8 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
     int bytes;
-    char *dado1  = calloc(TAM_PACOTE, sizeof(char));
-    char *dado2 = calloc(TAM_PACOTE, sizeof(char));
+    unsigned char *dado1  = calloc(TAM_PACOTE, sizeof(char));
+    unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(char));
 
 
 /* funciona 

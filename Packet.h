@@ -96,7 +96,7 @@ char *ptoa( char *pacote);
 char *itoa(int sequencia);
 
 /* ================ packet functions ================ */
- char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
+unsigned char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
 
 int check_sequence( char *buffer, int expected_seq);
 int check_parity( char *buffer);

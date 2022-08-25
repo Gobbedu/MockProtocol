@@ -20,7 +20,7 @@ char  dir_nn_E        = 'A',
 /* cria e seta pacote inteiro do zero, retorna nullo se houve ERRO
  * compoe enquadramento & calculo de paridade
  */
-char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados)
+unsigned char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados)
 {
     // VALIDA //
     if(dados)
@@ -30,25 +30,17 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
             return NULL;
         }
     }
-
-    // print_bytes("DADOS recebidos para EMPACOTAR", dados, bytes_dados);
-    // printf("\n");
-
     if(sequencia > MAX_SEQUENCE){
         printf("ERRO: tamanho da sequencia excede limite do pacote: %d\n", sequencia);
         return NULL;
     }
-
     if(!is_valid_type(tipo)){     // tipo invalido
         printf("ERRO: tipo nao pertence aos tipos do pacote: %d\n", tipo);
         return NULL;
     }
 
     // CRIA PACOTE //
-    // aloca memoria para o pacote
-    // int len_header          =   sizeof(envelope_packet);        // tamanho do header (MI, tamanho, sequencia, tipo)
-    char*packet   =   calloc(TAM_PACOTE, sizeof(char));         // aloca mem pro pacote, retorna string
-    // memset(packet, 0, TAM_PACOTE);                           // limpa lixo na memoria alocada
+    unsigned char *packet = calloc(TAM_PACOTE, sizeof(char));         // aloca mem pro pacote, retorna string
 
     // define informacao do header
     envelope_packet header_t;
@@ -57,18 +49,13 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
     header_t.sequencia  = sequencia;
     header_t.tipo       = tipo;
 
-    // cria ponteiro de header e faz cast para ponteiro pra char
-    // envelope_packet *header_p = &header_t;
-    // char*header = (char *) header_p;
-    // char header[3];
-    // memcpy((void*) header, (void*) &header_t, 3);
+    // faz cast para ponteiro de char com o endereco do header
     char *header = (char *) &header_t;
 
     packet[0] = header[0];      // salva MI em pacote[0] (8bits | 1byte)
     packet[1] = header[1];      // Tamanho + sequencia + tipo   = 2 bytes
     packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
 
-        // memcpy(packet+TAM_HEADER, dados, bytes_dados);
     for(int i = 0; i < bytes_dados; i++){   // calcula paridade somente dos dados
         packet[TAM_HEADER+i] = (dados[i]);    // salva 'data' no pacote 
         packet[TAM_PACOTE-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)

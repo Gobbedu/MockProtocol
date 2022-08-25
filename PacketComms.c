@@ -162,7 +162,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     int leu_sz, blocks = 0;
     // char resposta[TAM_PACOTE];
     char *resposta;
-    int try, bytes, leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
+    int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
     printf("envia sequencial start\n");
     rewind(file);
@@ -173,7 +173,6 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     
     // QUEBRA ARQUIVO EM BLOCOS //
     printf("chunking...\n");
-    try = 0;
     int tentativas = 0;
     int enviou = true;
     while(tentativas < NTENTATIVAS){  
