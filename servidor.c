@@ -61,20 +61,34 @@ int main()
 */
     // recv
     // char *dado = recebe_msg(soquete);
-    char dado[TAM_PACOTE];
-    memset(dado, 0, TAM_PACOTE);
-    if(recv(soquete, dado, TAM_PACOTE, 0) > 0)
-        print_bytes("recv recebeu", dado+TAM_HEADER, TAM_PACOTE);
-    // free(dado);
+    // char dado[TAM_PACOTE];
+    int bytes;
+    char *dado = calloc(TAM_PACOTE, sizeof(char));
+    char *dado2 = calloc(TAM_PACOTE, sizeof(char));
+    sleep(1);
+
+    // memset(dado, 255, TAM_PACOTE);
+    bytes = recv(soquete, dado, TAM_PACOTE, 0);
+    if(bytes > 0){
+        // printf("recv recebeu (%d) bytes", bytes);
+        // print_bytes(":", dado+TAM_HEADER, bytes-TAM_HEADER-1);
+        read_packet(dado);
+    }
     // sleep(1);
     printf("\n\n");
     // recv
     // char *dado2 = recebe_msg(soquete);
-    char dado2[TAM_PACOTE];
-    memset(dado2, 0, TAM_PACOTE);
-    if(recv(soquete, dado2, TAM_PACOTE, 0) > 0)
-        print_bytes("recv recebeu", dado2+TAM_HEADER, TAM_PACOTE);
-    // free(dado2);
+    // char dado2[TAM_PACOTE];
+    // memset(dado2, 255, TAM_PACOTE);
+    bytes = recv(soquete, dado2, TAM_PACOTE, 0);
+    if(bytes > 0){
+        // printf("recv recebeu (%d) bytes", bytes);
+        // print_bytes(":", dado2+TAM_HEADER, bytes-TAM_HEADER-1);
+        read_packet(dado2);
+    }
+
+    free(dado);
+    free(dado2);
 
 
     while(0){
