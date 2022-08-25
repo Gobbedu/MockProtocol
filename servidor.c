@@ -39,55 +39,39 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
+    int bytes;
+    char *dado1  = calloc(TAM_PACOTE, sizeof(char));
+    char *dado2 = calloc(TAM_PACOTE, sizeof(char));
+
+
 /* funciona 
-    // recv
-    char buf[63];
-    memset(buf, 0, 63);
-    recv(soquete, buf, 63, 0);
-    printf("tam buf: %ld\n", strlen(buf));
-    print(buf);
-    // recv
-    print(buf);
-    memset(buf, 0, 63);
-    recv(soquete, buf, 63, 0);
-    printf("tam buf: %ld\n", strlen(buf));
-    print(buf);
 */
+    int len_dado = 67;
+    // recv
+    bytes = recv(soquete, dado1, len_dado, 0);
+    if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes-TAM_HEADER-1);
+    else perror("deu erro:");
 
-
-
+    // recv
+    bytes = recv(soquete, dado2, len_dado, 0);
+    if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes-TAM_HEADER-1);
+    else perror("deu erro:");
 
 /* da problema
 */
-    // recv
-    // char *dado = recebe_msg(soquete);
-    // char dado[TAM_PACOTE];
-    int bytes;
-    char *dado = calloc(TAM_PACOTE, sizeof(char));
-    char *dado2 = calloc(TAM_PACOTE, sizeof(char));
-    sleep(1);
 
-    // memset(dado, 255, TAM_PACOTE);
-    bytes = recv(soquete, dado, TAM_PACOTE, 0);
-    if(bytes > 0){
-        // printf("recv recebeu (%d) bytes", bytes);
-        // print_bytes(":", dado+TAM_HEADER, bytes-TAM_HEADER-1);
-        read_packet(dado);
-    }
-    // sleep(1);
-    printf("\n\n");
-    // recv
-    // char *dado2 = recebe_msg(soquete);
-    // char dado2[TAM_PACOTE];
-    // memset(dado2, 255, TAM_PACOTE);
-    bytes = recv(soquete, dado2, TAM_PACOTE, 0);
-    if(bytes > 0){
-        // printf("recv recebeu (%d) bytes", bytes);
-        // print_bytes(":", dado2+TAM_HEADER, bytes-TAM_HEADER-1);
-        read_packet(dado2);
-    }
+    printf("\n========= recebeu pacote com dados\n");
+    bytes = recv(soquete, dado1, TAM_PACOTE, MSG_OOB);
+    if(bytes > 0)  read_packet(dado1);
+    else perror("deu erro:");
 
-    free(dado);
+    sleep(1);printf("\n\n");
+
+    bytes = recv(soquete, dado2, TAM_PACOTE, MSG_OOB);
+    if(bytes > 0)  read_packet(dado2);
+    else perror("deu erro:");
+
+    free(dado1);
     free(dado2);
 
 
