@@ -45,29 +45,25 @@ int main()
 
 
 /* funciona 
-*/
-    int len_dado = 67;
-    // recv
+    int len_dado = 63;
     bytes = recv(soquete, dado1, len_dado, 0);
-    if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes-TAM_HEADER-1);
+    if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes);
     else perror("deu erro:");
 
-    // recv
     bytes = recv(soquete, dado2, len_dado, 0);
-    if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes-TAM_HEADER-1);
+    if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes);
     else perror("deu erro:");
-
-/* da problema
 */
 
+/* da problema, some 4 bytes */
     printf("\n========= recebeu pacote com dados\n");
-    bytes = recv(soquete, dado1, TAM_PACOTE, MSG_OOB);
+    bytes = recv(soquete, dado1, TAM_PACOTE, 0);
     if(bytes > 0)  read_packet(dado1);
     else perror("deu erro:");
 
-    sleep(1);printf("\n\n");
+    sleep(1);printf("\n");
 
-    bytes = recv(soquete, dado2, TAM_PACOTE, MSG_OOB);
+    bytes = recv(soquete, dado2, TAM_PACOTE, 0);
     if(bytes > 0)  read_packet(dado2);
     else perror("deu erro:");
 
