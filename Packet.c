@@ -104,7 +104,7 @@ void read_packet(char*buffer)
     printf("packet Sequencia: %d\n", get_packet_sequence(buffer));
     printf("packet Tipo     : %s\n", get_type_packet(buffer));              // string com tipo
     // printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
-    print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer)-TAM_HEADER-1);
+    print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer));
     printf("packet Paridade : %d\n", get_packet_parity(buffer));            // paridade int 8bits   (pacote[-1])
     printf("Total-----------: %d Bytes\n", get_packet_len(buffer));         // tamanho total do pacote
 }
@@ -266,7 +266,7 @@ char *get_type_packet(char * buffer){
 void print_bytes(char* nome, char *buf, int n){
     printf("%s ", nome);
     for(int i = 0; i < n; i++){
-        if( i%10 == 0)   
+        if( i%20 == 0)   
             printf("\n");
         printf("%4d,", (buf[i]));
     }

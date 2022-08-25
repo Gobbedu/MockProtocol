@@ -37,49 +37,36 @@ int main(){
     send(soquete, make_packet(sequencia(), CD,    "emfim cd", 8), TAM_PACOTE, 0);
 */
 
-    // char buf[63];
-    // memset(buf, 0, 63);
-
-/* funciona
-    // send
-    char ok[63] = {-43,86,78,91,64,56,32,-127,-103,33,4,81,76,67,-34,110,38,97,41,75,-23,-9,32,119,-24,69,42,-70,76,-60,-100,105,26,-45,48,78,-127,-68,84,-99,75,-77,32,13,49,-20,10,69,-34,-125,107,102,70,12,39,-69,-51,-86,96,71,-6,64,66};
-    printf("tam ok: %ld\n", strlen(ok));
-    send(soquete, ok, 63, 0);
-    // send
-    char no[63] = {48,102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
-    printf("tam no: %ld\n", strlen(no));
-    send(soquete, no, 63, 0);
-*/
-
-/* da problema
-*/
     int bytes;
     char ok[63] = {-43,86,78,91,64,56,32,-127,-103,33,4,81,76,67,-34,110,38,97,41,75,-23,-9,32,119,-24,69,42,-70,76,-60,-100,105,26,-45,48,78,-127,-68,84,-99,75,-77,32,13,49,-20,10,69,-34,-125,107,102,70,12,39,-69,-51,-86,96,71,-6,64,66};
-    char quebra[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
-    // char quebra[63] = {48,102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
-    // char quebra[8] = {-120,0,-127,0,80,82,114,8};
-    
-    char* pacote = make_packet(0, DADOS, ok, 63);
-    bytes = send(soquete, pacote, TAM_PACOTE, 0);
-    if(bytes  > 0){
-        printf("send enviou (%d) bytes", bytes);
-        print_bytes(":", pacote+TAM_HEADER, bytes-TAM_HEADER-1);    // le a partir dos dados, somente os dados
-    }
-    printf("\n\n");
-    sleep(1);
-    char* pacote2 = make_packet(0, DADOS, quebra, 63);
-    bytes = send(soquete, pacote2, TAM_PACOTE, 0);
-    if( bytes > 0){
-        // read_packet(pacote2);
-        printf("send enviou (%d) bytes", bytes);
-        print_bytes(":", pacote2+TAM_HEADER, bytes-TAM_HEADER-1);
-    }
-    // envia_msg(soquete, &client_seq, DADOS, quebra, 63);
+    char no[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
 
-    // resp = recebe_msg(soquete);
-    // read_packet(resp);
-    // free(resp);
+/* funciona
+*/
+
+    // send
+    bytes = send(soquete, ok, 63, 0);
+    if(bytes > 0) print_bytes("enviou:", ok, bytes);
+    else perror("erro send():");
+    // send
+    bytes = send(soquete, no, 63, 0);
+    if(bytes > 0) print_bytes("enviou:", no, bytes);
+    else perror("erro send():");
+
+/* da problema ???????? some 4 bytes
+*/
     
+    char* pacote1 = make_packet(0, DADOS, ok, 63);
+    bytes = send(soquete, pacote1, TAM_PACOTE, MSG_WAITALL);
+    if(bytes  > 0)  read_packet(pacote1);
+
+    sleep(1);printf("\n\n");
+    
+    char* pacote2 = make_packet(0, DADOS, no, 63);
+    bytes = send(soquete, pacote2, TAM_PACOTE, MSG_WAITALL);
+    if( bytes > 0)  read_packet(pacote2);
+    free(pacote1);free(pacote2);    
+
 
     while(0){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
