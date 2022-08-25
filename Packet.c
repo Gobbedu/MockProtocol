@@ -74,8 +74,6 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
         packet[TAM_PACOTE-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)
     }
 
-    printf("PARIDADE: (%d)\n", packet[TAM_PACOTE-1]);
-
     // complemento nao entra na paridade
     char fill = ' ';
     for(int i = TAM_HEADER+bytes_dados; i < TAM_PACOTE-1; i++)  // a partir de onde dados parou

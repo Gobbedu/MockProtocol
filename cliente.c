@@ -46,21 +46,22 @@ int main(){
 
     // send
     bytes = send(soquete, ok, 63, 0);
-    if(bytes > 0) print_bytes("enviou:", ok, bytes);
+    if(bytes > 0) print_bytes("enviou dado cru:", ok, bytes);
     else perror("erro send():");
     // send
     bytes = send(soquete, no, 63, 0);
-    if(bytes > 0) print_bytes("enviou:", no, bytes);
+    if(bytes > 0) print_bytes("enviou dado cru:", no, bytes);
     else perror("erro send():");
+
 
 /* da problema ???????? some 4 bytes
 */
-    
+    printf("\n========= enviou o pacote com dados\n");
     char* pacote1 = make_packet(0, DADOS, ok, 63);
     bytes = send(soquete, pacote1, TAM_PACOTE, MSG_WAITALL);
     if(bytes  > 0)  read_packet(pacote1);
 
-    sleep(1);printf("\n\n");
+    sleep(1);printf("\n");
     
     char* pacote2 = make_packet(0, DADOS, no, 63);
     bytes = send(soquete, pacote2, TAM_PACOTE, MSG_WAITALL);
