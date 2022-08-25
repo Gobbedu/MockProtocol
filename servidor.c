@@ -44,7 +44,7 @@ int main()
     char *dado2 = calloc(TAM_PACOTE, sizeof(char));
 
 
-/* funciona 
+/* funciona */
     int len_dado = 63;
     bytes = recv(soquete, dado1, len_dado, 0);
     if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes);
@@ -53,7 +53,6 @@ int main()
     bytes = recv(soquete, dado2, len_dado, 0);
     if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes);
     else perror("deu erro:");
-*/
 
 /* da problema, some 4 bytes */
     printf("\n========= recebeu pacote com dados\n");
