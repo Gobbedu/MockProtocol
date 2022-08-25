@@ -31,8 +31,8 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
         }
     }
 
-    print_bytes("DADOS recebidos para EMPACOTAR", dados, bytes_dados);
-    printf("\n");
+    // print_bytes("DADOS recebidos para EMPACOTAR", dados, bytes_dados);
+    // printf("\n");
 
     if(sequencia > MAX_SEQUENCE){
         printf("ERRO: tamanho da sequencia excede limite do pacote: %d\n", sequencia);
@@ -58,17 +58,23 @@ char * make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dado
     header_t.tipo       = tipo;
 
     // cria ponteiro de header e faz cast para ponteiro pra char
-    envelope_packet *header_p = &header_t;
-    char*header = (char *) header_p;
+    // envelope_packet *header_p = &header_t;
+    // char*header = (char *) header_p;
+    // char header[3];
+    // memcpy((void*) header, (void*) &header_t, 3);
+    char *header = (char *) &header_t;
 
     packet[0] = header[0];      // salva MI em pacote[0] (8bits | 1byte)
     packet[1] = header[1];      // Tamanho + sequencia + tipo   = 2 bytes
     packet[2] = header[2];      // 6 bits  +  4 bits   + 6 bits = 2 bytes
 
+        // memcpy(packet+TAM_HEADER, dados, bytes_dados);
     for(int i = 0; i < bytes_dados; i++){   // calcula paridade somente dos dados
-        packet[TAM_HEADER+i] = dados[i];    // salva 'data' no pacote 
+        packet[TAM_HEADER+i] = (dados[i]);    // salva 'data' no pacote 
         packet[TAM_PACOTE-1] ^= dados[i];   // paridade vertical para deteccao de erros (XOR)
     }
+
+    printf("PARIDADE: (%d)\n", packet[TAM_PACOTE-1]);
 
     // complemento nao entra na paridade
     char fill = ' ';
@@ -98,7 +104,7 @@ void read_packet(char*buffer)
     printf("packet Sequencia: %d\n", get_packet_sequence(buffer));
     printf("packet Tipo     : %s\n", get_type_packet(buffer));              // string com tipo
     // printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
-    print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer));
+    print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer)-TAM_HEADER-1);
     printf("packet Paridade : %d\n", get_packet_parity(buffer));            // paridade int 8bits   (pacote[-1])
     printf("Total-----------: %d Bytes\n", get_packet_len(buffer));         // tamanho total do pacote
 }
@@ -259,7 +265,10 @@ char *get_type_packet(char * buffer){
 
 void print_bytes(char* nome, char *buf, int n){
     printf("%s ", nome);
-    for(int i = 0; i < 63; i++)
-        printf("%d,", buf[i]);
+    for(int i = 0; i < n; i++){
+        if( i%10 == 0)   
+            printf("\n");
+        printf("%4d,", (buf[i]));
+    }
     printf("fim\n");
 }

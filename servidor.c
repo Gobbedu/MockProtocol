@@ -20,15 +20,6 @@ int soquete;
 unsigned int serv_seq = 10;   // current server sequence
 unsigned int nxts_cli = 0;   // expected next client sequence
 
-void print(char *buf){
-    for(int i = 0; i < 63; i++)
-        printf("%d,", buf[i]);
-    printf("fim\n");
-}
-
-
-
-
 /* sniff sniff */
 int main()
 {
@@ -71,7 +62,7 @@ int main()
     // recv
     // char *dado = recebe_msg(soquete);
     char dado[TAM_PACOTE];
-    memset(dado, 255, TAM_PACOTE);
+    memset(dado, 0, TAM_PACOTE);
     if(recv(soquete, dado, TAM_PACOTE, 0) > 0)
         print_bytes("recv recebeu", dado+TAM_HEADER, TAM_PACOTE);
     // free(dado);
@@ -80,8 +71,8 @@ int main()
     // recv
     // char *dado2 = recebe_msg(soquete);
     char dado2[TAM_PACOTE];
-    memset(dado2, 255, TAM_PACOTE);
-    if(recv(soquete, dado, TAM_PACOTE, 0) > 0)
+    memset(dado2, 0, TAM_PACOTE);
+    if(recv(soquete, dado2, TAM_PACOTE, 0) > 0)
         print_bytes("recv recebeu", dado2+TAM_HEADER, TAM_PACOTE);
     // free(dado2);
 
