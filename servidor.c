@@ -27,7 +27,7 @@ int main()
     // int check;
     // char*resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
     // charbuffer[TAM_PACOTE];
-     char* pacote;
+    unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("eno1");
@@ -40,8 +40,8 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
     int bytes;
-    char *dado1  = calloc(TAM_PACOTE, sizeof(char));
-    char *dado2 = calloc(TAM_PACOTE, sizeof(char));
+    unsigned char *dado1 = calloc(TAM_PACOTE, sizeof(unsigned char));
+    unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(unsigned char));
 
 
 /* funciona */
@@ -227,7 +227,8 @@ void mkdirc( char* buffer){
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));         // print detalhes do erro
 
-    free_packet(resposta);
+    // free_packet(resposta);
+    free(resposta);
     free(mkdir);
 }
 

@@ -54,7 +54,7 @@ enum TIPOS {
 
 // variaveis globais definidas no .c, mas declaradas no .h
 // respostas de erro no servidor & constantes
-extern char  
+extern unsigned char  
                 dir_nn_E       , 
                 sem_permissao  , 
                 dir_ja_E       , 
@@ -96,13 +96,13 @@ char *ptoa( char *pacote);
 char *itoa(int sequencia);
 
 /* ================ packet functions ================ */
-char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
+unsigned char *make_packet(unsigned int sequencia, int tipo, unsigned char* dados, int bytes_dados);
 
-int check_sequence( char *buffer, int expected_seq);
-int check_parity( char *buffer);
+int check_sequence(unsigned char *buffer, int expected_seq);
+int check_parity(unsigned char *buffer);
 
-int calc_packet_parity( char *buffer);
-int free_packet( char* packet);
+int calc_packet_parity(unsigned char *buffer);
+// int free_packet(unsigned char* packet);
 
 
 // sequencializacao EH LOCAL
@@ -112,20 +112,20 @@ int free_packet( char* packet);
 // unsigned int next_seq(void);
 
 /* ================ packet getters ================ */
-char get_packet_MI( char* buffer);
-int get_packet_tamanho( char* buffer);
-int get_packet_sequence( char* buffer);
-int get_packet_type( char* buffer);
-char* get_packet_data( char* buffer);
-int get_packet_parity( char* buffer);
-int get_packet_len( char* buffer);
-char *get_type_packet( char* buffer);
+char get_packet_MI(unsigned char* buffer);
+int get_packet_tamanho(unsigned char* buffer);
+int get_packet_sequence(unsigned char* buffer);
+int get_packet_type(unsigned char* buffer);
+char* get_packet_data(unsigned char* buffer);
+int get_packet_parity(unsigned char* buffer);
+int get_packet_len(unsigned char* buffer);
+char *get_type_packet(unsigned char* buffer);
 
 
 /* ================ funcoes auxiliares ================ */
-void read_packet( char *buffer);
-int is_our_packet( char *buffer);
+void read_packet(unsigned char *buffer);
+int is_our_packet(unsigned char *buffer);
 int is_valid_type(int tipo);
-void print_bytes(char *nome, char *buf, int n);
+void print_bytes(char *nome,unsigned char *buf, int n);
 
 #endif
