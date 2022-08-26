@@ -29,8 +29,8 @@ int main()
     // charbuffer[TAM_PACOTE];
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
-    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("eno1");
+    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    // soquete = ConexaoRawSocket("eno1");
     // soquete = ConexaoRawSocket("enp3s0");
 
     struct timeval tv;
@@ -78,10 +78,10 @@ int main()
     // free(dado2);
 */
 
-    unsigned char * recebe = recebe_msg(soquete);
-    if(recebe) read_packet(recebe);
+    // unsigned char * recebe = recebe_msg(soquete);
+    // if(recebe) read_packet(recebe);
 
-    while(0){
+    while(1){
         pacote = recebe_msg(soquete);
         if(!pacote) 
             continue;
@@ -154,8 +154,8 @@ void server_switch(unsigned char* buffer)
 
 
 void cdc(unsigned char* buffer){
-    int resultado, bytes, ret;
-    unsigned char *resposta;
+    int resultado, ret;
+    // unsigned char *resposta;
     unsigned char *cd, flag[1];
     cd = get_packet_data(buffer);
     unsigned char *d = calloc(strcspn((char*)cd, " "), sizeof(unsigned char));    // remove espaco no final da mensagem, se tem espaco da ruim 
@@ -184,14 +184,15 @@ void cdc(unsigned char* buffer){
     else{
         resultado = OK;
     }
-    resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);
-    if(!resposta) return;   // se pacote deu errado
+    envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO);
+    // resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);
+    // if(!resposta) return;   // se pacote deu errado
 
-    bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
-    if(bytes<0)                                                     // pega erros, se algum
-        printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+    // bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
+    // if(bytes<0)                                                     // pega erros, se algum
+    //     printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
-    free(resposta);
+    // free(resposta);
     free(cd);
     free(d);
 }
@@ -200,8 +201,8 @@ void cdc(unsigned char* buffer){
 // Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
 void mkdirc(unsigned char* buffer){
-    int bytes, ret, resultado;
-    unsigned char *resposta;
+    int ret, resultado;
+    // unsigned char *resposta;
     unsigned char *mkdir, flag[1];
 
     mkdir = get_packet_data(buffer);
@@ -226,15 +227,16 @@ void mkdirc(unsigned char* buffer){
         resultado = OK;
     }
 
-    resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);    // mostra flag somente se tem erro, bytes_dados = 1
-    if(!resposta) return;   // se pacote deu errado
+    envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO);
+    // resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);    // mostra flag somente se tem erro, bytes_dados = 1
+    // if(!resposta) return;   // se pacote deu errado
 
-    bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
-    if(bytes<0)                                         // pega erros, se algum
-        printf("error: %s\n", strerror(errno));         // print detalhes do erro
+    // bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
+    // if(bytes<0)                                         // pega erros, se algum
+    //     printf("error: %s\n", strerror(errno));         // print detalhes do erro
 
     // free_packet(resposta);
-    free(resposta);
+    // free(resposta);
     free(mkdir);
 }
 
