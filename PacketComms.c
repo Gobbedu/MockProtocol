@@ -37,6 +37,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
         if(!resposta){
             fprintf(stderr, "TIMEO (%d) recebe_msg em envia_recebe\n", tryRecv+1);
             tryRecv++;
+            moven(send_seq, -1);
             continue;
         }   tryRecv = 0;        // recebeu msg
 
@@ -44,6 +45,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             fprintf(stderr, "ERRO PARIDADE (%d); resposta: (%s) ; mensagem: (%.*s)\n", 
             tryParadis+1, get_type_packet(resposta), MAX_DADOS, resposta+TAM_HEADER);
             tryParadis++;
+            moven(send_seq, -1);
             continue;
         }   tryParadis = 0;     // paridade ok
 
@@ -51,23 +53,25 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             fprintf(stderr, "ERRO SEQUENCIA (%d); esperava: (%d) recebeu: (%d)\n", //mensagem: (%.*s)\n", 
             trySeq+1, *recv_seq, get_packet_sequence(resposta)); //,get_type_packet(resposta)); //, MAX_DADOS, resposta+TAM_HEADER);
             trySeq++;
+            moven(send_seq, -1);
             continue;
         }   trySeq = 0;
 
         // VERIFICADO & !NACK //
         // aloca resposta para retorno
-        unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
-        if(!pacote){    
-            perror("Erro ao alocar pacote envia_recebe:");
-            return NULL;
-        }
+        // unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+        // if(!pacote){    
+        //     perror("Erro ao alocar pacote envia_recebe:");
+        //     moven(send_seq, -1);
+        //     return NULL;
+        // }
+        // memcpy(pacote, resposta, TAM_PACOTE);   // copia respota em pacote alocado
 
-        memcpy(pacote, resposta, TAM_PACOTE);   // copia respota em pacote alocado
-        next(send_seq);                         // aumenta sequencia de enviar
+        // next(send_seq);                         // aumenta sequencia de enviar
         next(recv_seq);                         // aumenta sequencia esperada ao receber
 
         // read_packet(resposta);
-        return pacote;                          // devolve resposta
+        return resposta;                          // devolve resposta
     }
 
     if(trySend==NTENTATIVAS)     fprintf(stderr, "Erro de comunicacao, envia_recebe nao conseguiu enviar  :(\n");
@@ -293,7 +297,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 }
 
 // envia uma mensagem para o socket, com verificacao de send() bytes > 0
-// retorna true se enviou com sucesso, e falso c.c., NAO ATUALIZA SEQUENCIA
+// retorna true se enviou com sucesso, e falso c.c., atualiza a sequencia
 // tenta enviar mensagem NTENTATIVAS vezes
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
 {
@@ -332,7 +336,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 }
 
 // recebe uma mensagem do socket, tenta receber mensagem NTENTATIVAS vezes, deve receber free()
-// verifica se recv deu timeout, bytes > 0 e se eh nosso pacote, NAO ATUALIZA SEQUENCIA
+// verifica se recv deu timeout, bytes > 0 e se eh nosso pacote, NAO atualiza a sequencia
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
