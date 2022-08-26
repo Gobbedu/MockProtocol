@@ -304,7 +304,9 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
         return false;
     }
 
-    unsigned short int *mascara = calloc(TAM_PACOTE, sizeof(unsigned short int));
+    // unsigned short int *mascara = calloc(TAM_PACOTE, sizeof(unsigned short int));
+    unsigned short int mascara[TAM_PACOTE];
+    memset(mascara, 0, sizeof(unsigned short int)*TAM_PACOTE);
     for(int i = 0; i < TAM_PACOTE; i++)
         mascara[i] = (unsigned short int) packet[i];
 
@@ -312,23 +314,20 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     // while(tentativas < NTENTATIVAS){
     for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
         bytes = send(socket, mascara, sizeof(unsigned short int)*TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes > 0)
+        if(bytes == sizeof(unsigned short int)*TAM_PACOTE)
             break;
-        else 
-            perror("oq deu:");
     }
 
     if(tentativas == NTENTATIVAS){
         free(packet);
-        free(mascara);
         printf("\nnn deu \n");
         return false;
     }
 
     // printf("sent (%d) bytes\n", bytes);
     // read_packet(packet);
+    next(this_seq);
     free(packet);
-    free(mascara);
     return true;
 }
 
@@ -345,7 +344,7 @@ unsigned char *recebe_msg(int socket)
     for(i = 0; i < NTENTATIVAS; i++){
         memset(buffer, 0, sizeof(unsigned short int)*TAM_PACOTE);
         bytes = recv(socket, buffer, sizeof(unsigned short int)*TAM_PACOTE, 0);        // recebe dados do socket
-        if (bytes >= TAM_PACOTE)                           // recebeu tamanho do pacote
+        if (bytes == sizeof(unsigned short int)*TAM_PACOTE)                           // recebeu tamanho do pacote
             if (is_our_mask(buffer))                      // e eh nosso pacote
                 break;
     }
@@ -361,7 +360,6 @@ unsigned char *recebe_msg(int socket)
         pacote[i] = (unsigned char) buffer[i];
 
     // recebeu pacote valido //
-    // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
 }
 
