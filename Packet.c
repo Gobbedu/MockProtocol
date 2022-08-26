@@ -144,7 +144,7 @@ int check_parity(unsigned char *buffer){
     return calc_packet_parity(buffer) == get_packet_parity(buffer);
 }
 
-// se paridade nao bate, retorna falso, c.c. verdadeiro
+// se sequencia esperada nao bate com sequencia do pacote, retorna falso, c.c. verdadeiro
 int check_sequence(unsigned char *buffer, int expected_seq)
 {
     if(expected_seq == get_packet_sequence(buffer))
@@ -154,7 +154,7 @@ int check_sequence(unsigned char *buffer, int expected_seq)
 }
 /* ============================== PACKET GETTERS ============================== */
 // retorna marcador de inicio do pacote
-char get_packet_MI(unsigned char *buffer){
+unsigned char get_packet_MI(unsigned char *buffer){
     envelope_packet *header = (envelope_packet*) buffer;
     return header->MI;
 }
@@ -178,9 +178,9 @@ int get_packet_type(unsigned char *buffer){
 }
 
 // retorna sessao dados do pacote como string (deve receber free)
-char* get_packet_data(unsigned char *buffer){               // empurra ponteiro
+unsigned char* get_packet_data(unsigned char *buffer){               // empurra ponteiro
     int size = get_packet_tamanho(buffer);
-    char *data = malloc(size*sizeof(char));
+    unsigned char *data = malloc(size*sizeof(unsigned char));
     memcpy(data, (buffer+TAM_HEADER), size);
     data[size] = '\0';
     return data;

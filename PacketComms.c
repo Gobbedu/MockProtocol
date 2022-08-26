@@ -11,12 +11,74 @@
 #define NTENTATIVAS 3 // numero de vezes que vai tentar ler/enviar um pacote
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
 
-/* envia UM pacote e espera UMA resposta,
- * re-envia caso nack ou timeout, 
- * retorna NULL se perde conexao ou o pacote se recebe resposta esperada
- * atualiza expected_seq, se deu certo
+/* envia UM pacote com dados especificados e espera UMA resposta,
+ * tenta NTENTATIVAS vezes as operacoes envolvidas
+ * retorna NULL se perde conexao ou retorna o pacote se recebe resposta esperada
+ * atualiza send_seq e recv_seq se deu certo, retorno deve receber free()
  */ 
-char*envia(int soquete, char * packet, unsigned int *expected_seq)
+unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados)
+{
+    int trySend, tryRecv, tryParadis, trySeq;
+    unsigned char *resposta;
+
+    // exit if recebe 3 timeouts da funcao
+    trySend = tryRecv = tryParadis = trySeq = 0;
+    while(  trySend<NTENTATIVAS && tryRecv<NTENTATIVAS && 
+            tryParadis<NTENTATIVAS && trySeq<NTENTATIVAS )
+    { 
+        resposta = NULL;
+        if(!envia_msg(soquete, send_seq, tipo, dados, bytes_dados)){
+            printf("TIMEO (%d) envia_msg em envia_recebe\n;", trySend);
+            trySend++;
+            continue;
+        }   trySend = 0;        // enviou msg
+
+        resposta = recebe_msg(soquete);
+        if(!resposta){
+            printf("TIMEO (%d) recebe_msg em envia_recebe\n;", tryRecv);
+            tryRecv++;
+            continue;
+        }   tryRecv = 0;        // recebeu msg
+
+        if (!check_parity(resposta)){             
+            printf("ERRO PARIDADE (%d); resposta: (%s) ; mensagem: (%.*s)\n", 
+            tryParadis, get_type_packet(resposta), MAX_DADOS, resposta+TAM_HEADER);
+            tryParadis++;
+            continue;
+        }   tryParadis = 0;     // paridade ok
+
+        if(!check_sequence(resposta, *recv_seq)){
+            printf("ERRO SEQUENCIA (%d); esperava: (%d) recebeu: (%d); ", //mensagem: (%.*s)\n", 
+            trySeq, *recv_seq, get_packet_sequence(resposta)); //,get_type_packet(resposta)); //, MAX_DADOS, resposta+TAM_HEADER);
+            trySeq++;
+            continue;
+        }   trySeq = 0;
+
+        // VERIFICADO & !NACK //
+        // aloca resposta para retorno
+        unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+        if(!pacote){    
+            perror("Erro ao alocar pacote envia_recebe:");
+            return NULL;
+        }
+
+        memcpy(pacote, resposta, TAM_PACOTE);   // copia respota em pacote alocado
+        next(send_seq);                         // aumenta sequencia de enviar
+        next(recv_seq);                         // aumenta sequencia esperada ao receber
+
+        // read_packet(resposta);
+        return pacote;                          // devolve resposta
+    }
+
+    if(trySend==NTENTATIVAS)     printf("Erro de comunicacao, envia_recebe nao conseguiu enviar  :(\n");
+    if(tryRecv==NTENTATIVAS)     printf("Erro de comunicacao, envia_recebe nao conseguiu receber :(\n");
+    if(tryParadis==NTENTATIVAS)  printf("Erro de comunicacao, envia_recebe recebeu muitos NACKs  :(\n");
+    if(trySeq==NTENTATIVAS)      printf("Erro de comunicacao, envia_recebe recebeu muitas sequencias erradas :(\n");
+        
+    return NULL;
+}
+
+unsigned char *envia(int soquete,unsigned char * packet, unsigned int *expected_seq)
 {
     int bytes, timeout, lost_conn, resend;
     char resposta[TAM_PACOTE];
@@ -30,10 +92,11 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
         // printf("sending packet:\n");
         // read_packet(packet);
         // printf("\n");
-        bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes < 0){                                      // pega erros, se algum
-            perror("ERROR envia pacote em envia()");
-        }
+        // bytes = send(soquete, packet, TAM_PACOTE, 0);       // envia packet para o socket
+        // if(bytes < 0){                                      // pega erros, se algum
+        //     perror("ERROR envia pacote em envia()");
+        // }
+        // envia_msg(soquete, packet, )
 
         // said do loop soh se server responde nack, (ok e erro retorna da funcao)
         timeout = 0;
@@ -95,7 +158,7 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
 // recebe UM pacote, bloqueante (?) 
 // retorna NULL se nn recebeu nada ou aloca um pacote se recebe pacote esperado
 // pacote recebido deve ser liberado da memoria, free(pacote recebido)
-char*recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
+unsigned char*recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
 {
     int bytes;
     char *seq;
@@ -161,7 +224,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 {
     int leu_sz, blocks = 0;
     // char resposta[TAM_PACOTE];
-    char *resposta;
+    unsigned char *resposta;
     int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
     printf("envia sequencial start\n");
@@ -169,7 +232,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
     // LIMITE CAMPO DADOS //
     int max_data = TAM_PACOTE - sizeof(envelope_packet) - 1;        // total - header - paridade
-    char *data = calloc(max_data, sizeof(char));                      // info q vai no campo dados no pacote
+    unsigned char *data = calloc(max_data, sizeof(char));                      // info q vai no campo dados no pacote
     
     // QUEBRA ARQUIVO EM BLOCOS //
     printf("chunking...\n");
@@ -193,9 +256,11 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
         if(!envia_msg(socket, this_seq, DADOS, data, leu_sz)){
-            printf("ERRO, nao foi possivel enviar_msg() em envia sequencial\n");
-            return false;
-        }
+            printf("timeo envia_msg() em envia_sequencial (DADOS)\n");
+            // return false;
+            tentativas++;
+            continue;
+        }   
 
         // if(feof(file)){  // termina se fim do arquivo
         //     printf("src feof break\n");
@@ -209,9 +274,10 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
         resposta = recebe_msg(socket);
         if(!resposta){
-            printf("timeo on receiving resposta (ACK, NACK)\n");
+            printf("timeo recebe_msg() envia_sequencial (ACK, NACK)\n");
+            tentativas++;
             continue;
-        }
+        }   tentativas = 0;
         // while(try < NTENTATIVAS){
             // bytes = recv(socket, resposta, TAM_PACOTE, 0);
         //     if(errno == EAGAIN || errno == EWOULDBLOCK){     
@@ -247,8 +313,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         if(!check_parity(resposta)){    // se paridade errada
             printf("recebe_msg() recebeu mensagem com erro na paridade\n");
             return false;
-        }
-        enviou = true;
+        }   enviou = true;
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
@@ -274,15 +339,26 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         next(other_seq);
         free(resposta);
     }
-    // ajeitar ultimo pacote
-    if(!envia_msg(socket, this_seq, FIM, NULL, 0)){
-        printf("nao foi possivel enviar_msg() FIM\n");
-        
+
+    if(tentativas == NTENTATIVAS){
+        printf("perdeu conexao em envia_sequencial, return\n");
+        free(data);
+        return false;
     }
+
+    // ajeitar ultimo pacote
+    int i;
+    for(i = 0; i < NTENTATIVAS; i++)
+        if(envia_msg(socket, this_seq, FIM, NULL, 0))
+            break;
+    if(i == NTENTATIVAS){
+        printf("nao foi possivel enviar_msg() FIM, perda de conexao, return\n");
+        free(data);
+        return false;
+    }
+        
     blocks++;
     free(data);
-    fclose(file);
-
     printf("finished chunking (%d) blocks, leu (%d) bytes\n", blocks, leu_bytes);
     return true;
 }
@@ -291,8 +367,8 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try;
     // char pacote[TAM_PACOTE];
-    char *pacote;
-    char *seq;
+    unsigned char *pacote;
+    unsigned char *seq;
 
     printf("recebe sequencial start\n");
 
@@ -301,6 +377,7 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     sprintf(dest, "(copy)%s", file);
     
     FILE *dst = fopen(dest, "w");
+    free(dest);
     // FILE *dst = fopen("teste_dst.txt", "w");
     if(!dst){
         printf("could not open destine file, terminate\n");
@@ -310,39 +387,8 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     // MONTA ARQUIVO //
     try = 0;
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
-        // tenta receber pacote 
-        // pacote = recebe_msg(socket);
-        // if(!pacote){
-        //     try = 1;
-        //     break;
-        // }
-        // memset(pacote, 0, TAM_PACOTE);
-        // bytes = recv(socket, pacote, TAM_PACOTE, 0);
-        // // if(errno == EAGAIN || errno == EWOULDBLOCK){     
-        // //     fprintf(stderr, "tentativa (%d), ", try+1);   
-        // //     perror("ERRO timeout recebe_msg()");
-        // //     try++;
-        // //     continue;
-        // // }
-        // if(bytes != 67){
-        //     // if(bytes == 63){
-        //         gambiarra = make_packet(*other_seq, DADOS, pacote, bytes);
-        //         memcpy(pacote, gambiarra, TAM_PACOTE);
-        //         free(gambiarra);
-        //     // else{
-        //     try++;
-        //     printf("recebeu (%d) bytes, ", bytes);
-        //     perror("ERRO ao receber pacote em recebe_sequencial");
-        //     continue;
-        //     }
-        //     // }
-        // // }
-        // if(!is_our_packet(pacote)){
-        //     try++;
-        //     continue;
-        // }try = 0;
         pacote = recebe_msg(socket);
-        if(!pacote) continue;
+        if(!pacote){ try++; continue; }
         read_packet(pacote);
 
         // FIM //
@@ -515,12 +561,12 @@ int build_file(char *file, char**packet_array, int array_size)
 }
 
 // envia uma mensagem para o socket, com verificacao de send() bytes > 0
-// retorna true se enviou com sucesso, e falso c.c., atualizando a sequencia de acordo
+// retorna true se enviou com sucesso, e falso c.c., NAO ATUALIZA SEQUENCIA
 // tenta enviar mensagem NTENTATIVAS vezes
-int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int n_bytes)
+int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
 {
     int bytes, tentativas;
-    char*packet = make_packet(*this_seq, tipo, parametro, n_bytes);
+    unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         return false;
@@ -547,7 +593,6 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
         return false;
     }
 
-    next(this_seq);
     printf("sent (%d) bytes\n", bytes);
     read_packet(packet);
     free(packet);
@@ -564,15 +609,15 @@ char*recebe_msg(int socket)
 
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
-        bytes = recv(socket, buffer, TAM_PACOTE, 0);       // recebe dados do socket
-        if (bytes == TAM_PACOTE){
-            if (is_our_packet(buffer))
+        bytes = recv(socket, buffer, TAM_PACOTE, 0);        // recebe dados do socket
+        if (bytes == TAM_PACOTE){                           // recebeu tamanho do pacote
+            if (is_our_packet(buffer))                      // e eh nosso pacote
                 break;
         }
-        else if (bytes == 63){
-            if(is_our_packet(buffer))
-                print_bytes("RECV RECEBEU 63", buffer, 63);
-        }
+        // else if (bytes == 63){
+        //     if(is_our_packet(buffer))
+        //         print_bytes("RECV RECEBEU 63", buffer, 63);
+        // }
         
     }
 
@@ -580,10 +625,12 @@ char*recebe_msg(int socket)
     if(i == NTENTATIVAS) 
         return NULL;
 
-    // recebeu pacote //
+    // recebeu pacote valido //
     char*pacote = calloc(TAM_PACOTE, sizeof(char ));
     memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
+}
+
 
 /*
     // resposta = calloc(TAM_PACOTE, sizeof(char ));
@@ -626,7 +673,6 @@ char*recebe_msg(int socket)
     memcpy(pacote, resposta, TAM_PACOTE);
     return pacote;
     */
-}
 
 
 
@@ -658,6 +704,39 @@ char *itoa(int sequencia){
     sprintf(text, "%d", sequencia);
     return text;
 }
+
+      // tenta receber pacote 
+        // pacote = recebe_msg(socket);
+        // if(!pacote){
+        //     try = 1;
+        //     break;
+        // }
+        // memset(pacote, 0, TAM_PACOTE);
+        // bytes = recv(socket, pacote, TAM_PACOTE, 0);
+        // // if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        // //     fprintf(stderr, "tentativa (%d), ", try+1);   
+        // //     perror("ERRO timeout recebe_msg()");
+        // //     try++;
+        // //     continue;
+        // // }
+        // if(bytes != 67){
+        //     // if(bytes == 63){
+        //         gambiarra = make_packet(*other_seq, DADOS, pacote, bytes);
+        //         memcpy(pacote, gambiarra, TAM_PACOTE);
+        //         free(gambiarra);
+        //     // else{
+        //     try++;
+        //     printf("recebeu (%d) bytes, ", bytes);
+        //     perror("ERRO ao receber pacote em recebe_sequencial");
+        //     continue;
+        //     }
+        //     // }
+        // // }
+        // if(!is_our_packet(pacote)){
+        //     try++;
+        //     continue;
+        // }try = 0;
+
 
 /*
 // MODELO DE USO FUNCIONA //
