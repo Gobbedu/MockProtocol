@@ -305,16 +305,16 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     read_packet(packet);
-    unsigned int *mascara = calloc(TAM_PACOTE, sizeof(unsigned int));
+    unsigned short int *mascara = calloc(TAM_PACOTE, sizeof(unsigned short int));
     for(int i = 0; i < TAM_PACOTE; i++){
-        mascara[i] = (unsigned int) packet[i];
+        mascara[i] = (unsigned short int) packet[i];
         printf("%d ", mascara[i]);
     }
 
     // tentativas = 0;
     // while(tentativas < NTENTATIVAS){
     for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
-        bytes = send(socket, mascara, sizeof(unsigned int)*TAM_PACOTE, 0);       // envia packet para o socket
+        bytes = send(socket, mascara, sizeof(unsigned short int)*TAM_PACOTE, 0);       // envia packet para o socket
         if(bytes > 0)
             break;
         else 
@@ -341,13 +341,13 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 unsigned char *recebe_msg(int socket)
 {
     // unsigned char buffer[TAM_PACOTE];
-    unsigned int buffer[TAM_PACOTE];
+    unsigned short int buffer[TAM_PACOTE];
     int bytes, i;
 
     // VERIFICA //
-    memset(buffer, 0, sizeof(unsigned int)*TAM_PACOTE);
+    memset(buffer, 0, sizeof(unsigned short int)*TAM_PACOTE);
     for(i = 0; i < NTENTATIVAS; i++){
-        bytes = recv(socket, buffer, sizeof(unsigned int)*TAM_PACOTE, 0);        // recebe dados do socket
+        bytes = recv(socket, buffer, sizeof(unsigned short int)*TAM_PACOTE, 0);        // recebe dados do socket
         if (bytes >= TAM_PACOTE)                           // recebeu tamanho do pacote
             // if (is_our_packet(buffer))                      // e eh nosso pacote
                 break;
