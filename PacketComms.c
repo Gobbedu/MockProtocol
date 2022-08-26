@@ -35,7 +35,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
 
         resposta = recebe_msg(soquete);
         if(!resposta){
-            fprintf(stderr, "TIMEO (%d) recebe_msg em envia_recebe\n;", tryRecv+1);
+            fprintf(stderr, "TIMEO (%d) recebe_msg em envia_recebe\n", tryRecv+1);
             tryRecv++;
             continue;
         }   tryRecv = 0;        // recebeu msg
@@ -48,7 +48,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
         }   tryParadis = 0;     // paridade ok
 
         if(!check_sequence(resposta, *recv_seq)){
-            fprintf(stderr, "ERRO SEQUENCIA (%d); esperava: (%d) recebeu: (%d); ", //mensagem: (%.*s)\n", 
+            fprintf(stderr, "ERRO SEQUENCIA (%d); esperava: (%d) recebeu: (%d)\n", //mensagem: (%.*s)\n", 
             trySeq+1, *recv_seq, get_packet_sequence(resposta)); //,get_type_packet(resposta)); //, MAX_DADOS, resposta+TAM_HEADER);
             trySeq++;
             continue;
@@ -231,13 +231,16 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
     try = 0;
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         pacote = recebe_msg(socket);
-        if(!pacote){ try++; continue; }
+        if(!pacote){ 
+            try++; 
+            continue; 
+        }
         read_packet(pacote);
 
         // FIM //
         if(get_packet_type(pacote) == FIM){
             next(other_seq);
-            // free(pacote);
+            free(pacote);
             break;
         }
 
@@ -275,8 +278,8 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
         }
         seq = ptoa(pacote);
         envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
-        printf("enviou ACK\n");
-
+        printf("\t\t\t\tenviou ACK\n");
+        // next(this_seq);
         // free(pacote);
     }
 
@@ -300,22 +303,34 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
         return false;
     }
 
+    read_packet(packet);
+    unsigned int *mascara = calloc(TAM_PACOTE, sizeof(unsigned int));
+    for(int i = 0; i < TAM_PACOTE; i++){
+        mascara[i] = (unsigned int) packet[i];
+        printf("%d ", mascara[i]);
+    }
+
     // tentativas = 0;
     // while(tentativas < NTENTATIVAS){
     for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
-        bytes = send(socket, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes == TAM_PACOTE)
+        bytes = send(socket, mascara, sizeof(unsigned int)*TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes > 0)
             break;
+        else 
+            perror("oq deu:");
     }
 
     if(tentativas == NTENTATIVAS){
         free(packet);
+        free(mascara);
+        printf("\nnn deu \n");
         return false;
     }
 
-    printf("sent (%d) bytes\n", bytes);
-    read_packet(packet);
+    printf("\nsent (%d) bytes\n", bytes);
+    // read_packet(packet);
     free(packet);
+    free(mascara);
     return true;
 }
 
@@ -324,15 +339,16 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned char buffer[TAM_PACOTE];
+    // unsigned char buffer[TAM_PACOTE];
+    unsigned int buffer[TAM_PACOTE];
     int bytes, i;
 
     // VERIFICA //
+    memset(buffer, 0, sizeof(unsigned int)*TAM_PACOTE);
     for(i = 0; i < NTENTATIVAS; i++){
-        memset(buffer, 0, TAM_PACOTE);
-        bytes = recv(socket, buffer, TAM_PACOTE, 0);        // recebe dados do socket
-        if (bytes == TAM_PACOTE)                           // recebeu tamanho do pacote
-            if (is_our_packet(buffer))                      // e eh nosso pacote
+        bytes = recv(socket, buffer, sizeof(unsigned int)*TAM_PACOTE, 0);        // recebe dados do socket
+        if (bytes >= TAM_PACOTE)                           // recebeu tamanho do pacote
+            // if (is_our_packet(buffer))                      // e eh nosso pacote
                 break;
     }
 
@@ -340,9 +356,14 @@ unsigned char *recebe_msg(int socket)
     if(i == NTENTATIVAS) 
         return NULL;
 
+    printf("leu (%d) bytes\n", bytes);
+
+    unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+    for(int i = 0; i < TAM_PACOTE; i++)
+        pacote[i] = (unsigned char) buffer[i];
+
     // recebeu pacote valido //
-    unsigned char *pacote = calloc(TAM_PACOTE, sizeof(char ));
-    memcpy(pacote, buffer, TAM_PACOTE);
+    // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
 }
 

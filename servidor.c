@@ -30,8 +30,8 @@ int main()
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
-    // soquete = ConexaoRawSocket("eno1");
-    soquete = ConexaoRawSocket("enp3s0");
+    soquete = ConexaoRawSocket("eno1");
+    // soquete = ConexaoRawSocket("enp3s0");
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -78,8 +78,10 @@ int main()
     // free(dado2);
 */
 
+    unsigned char * recebe = recebe_msg(soquete);
+    if(recebe) read_packet(recebe);
 
-    while(1){
+    while(0){
         pacote = recebe_msg(soquete);
         if(!pacote) 
             continue;

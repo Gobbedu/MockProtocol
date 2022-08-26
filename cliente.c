@@ -23,23 +23,10 @@ int main(){
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
-   /* char buffer[TAM_PACOTE];
-    char*buff;
-    send(soquete, make_packet(sequencia(), MKDIR, "1o mkdir", 8), TAM_PACOTE, 0);
-    send(soquete, make_packet(sequencia(), MKDIR, "2o mkdir", 8), TAM_PACOTE, 0);
-    send(soquete, make_packet(sequencia(), MKDIR, "3o mkdir", 8), TAM_PACOTE, 0);
-    send(soquete, make_packet(sequencia(), MKDIR, "4o mkdir", 8), TAM_PACOTE, 0);
-    sleep(1);
-    recv(soquete, buffer, TAM_PACOTE, 0);
-    // buff = recebe(soquete, &client_seq, &nxts_serve);
-    perror("ERRO ");
-    read_packet(buffer);
-    send(soquete, make_packet(sequencia(), CD,    "emfim cd", 8), TAM_PACOTE, 0);
-
-    int bytes;
+    unsigned char no[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
+   /* 
     int len_dado = 63;
     unsigned char ok[63] = {-43,86,78,91,64,56,32,-127,-103,33,4,81,76,67,-34,110,38,97,41,75,-23,-9,32,119,-24,69,42,-70,76,-60,-100,105,26,-45,48,78,-127,-68,84,-99,75,-77,32,13,49,-20,10,69,-34,-125,107,102,70,12,39,-69,-51,-86,96,71,-6,64,66};
-    unsigned char no[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
 
     unsigned char *bruh = "segfault my ass bitch";
     unsigned char *resposta = envia_recebe(soquete, &client_seq, &nxts_serve, no, DADOS, len_dado);
@@ -69,6 +56,9 @@ int main(){
     if( bytes > 0)  read_packet(pacote2);
     free(pacote1);free(pacote2);    
 */
+
+
+    envia_msg(soquete, &client_seq, DADOS, no, 63);
 
 
     while(0){
