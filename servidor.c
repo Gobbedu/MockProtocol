@@ -40,11 +40,18 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
     int bytes;
-    unsigned char *dado1 = calloc(TAM_PACOTE, sizeof(unsigned char));
-    unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(unsigned char));
+    // unsigned char *dado1 = calloc(TAM_PACOTE, sizeof(unsigned char));
+    // unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(unsigned char));
+    unsigned char dado1[TAM_PACOTE];
+    memset(dado1, 0, TAM_PACOTE);
+    unsigned char dado2[TAM_PACOTE];
+    memset(dado2, 0, TAM_PACOTE);
 
+    unsigned char * recebeu = recebe_msg(soquete);
+    if(recebeu)
+        envia_msg(soquete, &serv_seq, ACK, recebeu+TAM_HEADER, MAX_DADOS);
 
-/* funciona */
+/* funciona
     int len_dado = 63;
     bytes = recv(soquete, dado1, len_dado, 0);
     if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes);
@@ -54,7 +61,7 @@ int main()
     if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes);
     else perror("deu erro:");
 
-/* da problema, some 4 bytes */
+/* da problema, some 4 bytes 
     printf("\n========= recebeu pacote com dados\n");
     bytes = recv(soquete, dado1, TAM_PACOTE, 0);
     if(bytes > 0)  read_packet(dado1);
@@ -65,9 +72,10 @@ int main()
     bytes = recv(soquete, dado2, TAM_PACOTE, 0);
     if(bytes > 0)  read_packet(dado2);
     else perror("deu erro:");
+*/
 
-    free(dado1);
-    free(dado2);
+    // free(dado1);
+    // free(dado2);
 
 
     while(0){
