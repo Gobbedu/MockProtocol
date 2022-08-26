@@ -101,6 +101,17 @@ int is_our_packet(unsigned char *buffer)
     return header->MI == MARCADOR_INICIO;
 }
 
+int is_our_mask(unsigned short int *buffer){
+    unsigned char header[TAM_HEADER];
+    memset(header, 0, TAM_HEADER*sizeof(unsigned char));
+    for(int i = 0; i < TAM_HEADER; i++)
+        header[i] = (unsigned char) buffer[i];
+
+    envelope_packet *pacote = (envelope_packet *) header;
+    return pacote->MI == MARCADOR_INICIO;
+}
+
+
 int is_valid_type(int tipo){
     if( tipo > 63)  // tipo maior que 6 bits
         return 0;
