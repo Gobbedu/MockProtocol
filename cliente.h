@@ -8,8 +8,8 @@
 #include <errno.h>
 #include <unistd.h>
 
-int cliente_sinaliza(char *comando, int tipo);
-int response_GET(char * resposta, char *parametro);
+int cliente_sinaliza(unsigned char *comando, int tipo);
+int response_GET(unsigned char * resposta, unsigned char *parametro);
 void client_switch(char* comando);
 // void get(char *comando, int tipo);
 

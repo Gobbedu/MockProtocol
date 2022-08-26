@@ -35,7 +35,6 @@ int main(){
     perror("ERRO ");
     read_packet(buffer);
     send(soquete, make_packet(sequencia(), CD,    "emfim cd", 8), TAM_PACOTE, 0);
-*/
 
     int bytes;
     int len_dado = 63;
@@ -43,10 +42,10 @@ int main(){
     unsigned char no[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
 
     unsigned char *bruh = "segfault my ass bitch";
-    unsigned char *resposta = envia_recebe(soquete, &client_seq, &nxts_serve, ok, DADOS, len_dado);
+    unsigned char *resposta = envia_recebe(soquete, &client_seq, &nxts_serve, no, DADOS, len_dado);
     if(resposta) read_packet(resposta);
 
-/* funciona 
+// funciona 
     // send
     bytes = send(soquete, (void*) ok, len_dado, 0);
     if(bytes > 0) print_bytes("enviou dado cru:", ok, bytes);
@@ -57,7 +56,7 @@ int main(){
     else perror("erro send():");
 
 
-/* envia ok 
+// envia ok 
     printf("\n========= enviou o pacote com dados\n");
     unsigned char *pacote1 = make_packet(14, DADOS, ok, len_dado);
     bytes = send(soquete, pacote1, TAM_PACOTE, 0);
@@ -122,7 +121,7 @@ void client_switch(char* comando){
     {   // chdir nao pode ter espacos errados
         parametro += 3;                         // remove "cds"
         parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
-        if(cliente_sinaliza(parametro, CD))
+        if(cliente_sinaliza((unsigned char*)parametro, CD))
             printf("moveu de diretorio no servidor com sucesso!\n");
         else
             printf("nao foi possivel mover de diretorio no servidor ...\n");
@@ -131,7 +130,7 @@ void client_switch(char* comando){
     {   // mkdir usa syscall, pode ter espacos
         parametro[5] = ' ';                   // "mkdirs_[...]" -> "mkdir__[...]" 
 
-        if(cliente_sinaliza(parametro, MKDIR))
+        if(cliente_sinaliza((unsigned char*)parametro, MKDIR))
             printf("criou diretorio no servidor com sucesso!\n");
         else
             printf("nao foi possivel criar diretorio no servidor ...\n");
@@ -145,7 +144,7 @@ void client_switch(char* comando){
         parametro += 3;                       // remove "get"
         parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
         // get(comando, GET);
-        cliente_sinaliza(parametro, GET);
+        cliente_sinaliza((unsigned char*)parametro, GET);
     }
     else if (strncmp(comando, "put", 3) == 0)
     {
@@ -168,16 +167,16 @@ void client_switch(char* comando){
 
 
 // talvez precise refatorar mais tarde (put & ls tb usam tipo desc_arq)
-int response_GET(char * resposta_srv, char *file){
+int response_GET(unsigned char * resposta_srv, unsigned char *file){
     // int bytes, resultado, mem_livre;
-    char*resposta_cli;
+    unsigned char*resposta_cli;
     int bytes, mem_livre;
     char pwd[PATH_MAX];
     int tamanho = 0;
-    char* dado;
+    unsigned char* dado;
     
     dado = get_packet_data(resposta_srv);
-    tamanho = atoi(dado);               // pegando o tamanho do arquivo em bytes, enviado pelo servidor
+    tamanho = atoi((char*)dado);               // pegando o tamanho do arquivo em bytes, enviado pelo servidor
     free(dado);
     getcwd(pwd, sizeof(pwd));           // verificando o diretorio atual
 
@@ -196,7 +195,7 @@ int response_GET(char * resposta_srv, char *file){
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
         printf("Espaço insuficiente!\n");
-        resposta_cli = make_packet(sequencia(), ERRO, (char*) &sem_espaco, 1);
+        resposta_cli = make_packet(sequencia(), ERRO, &sem_espaco, 1);
         bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
         if(bytes<0)                                             // pega erros, se algum
             printf("falha ao enviar pacote de resposta do get, erro: %s\n", strerror(errno));         // print detalhes do erro
@@ -231,12 +230,12 @@ int response_GET(char * resposta_srv, char *file){
  *  B - Permission denied           : 13
  *  C - File already exists         : 11 (?)
  */
-int cliente_sinaliza(char *parametro, int tipo)
+int cliente_sinaliza(unsigned char *parametro, int tipo)
 {
     // int bytes, timeout, lost_conn, resend;
     // charresposta[TAM_PACOTE];
-    char*resposta;
-    char* data;
+    unsigned char *resposta;
+    unsigned char *data;
 
     // /* cria pacote com parametro para cd no server */
     // char*packet = make_packet(sequencia(), tipo, parametro, strlen(parametro));
@@ -245,7 +244,7 @@ int cliente_sinaliza(char *parametro, int tipo)
 
     // // envia pacote pro servidor e aguarda uma resposta
     // resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
-    resposta = envia_recebe(soquete, client_seq, nxts_serve, (unsigned char*) parametro, tipo, strlen(parametro));
+    resposta = envia_recebe(soquete, &client_seq, &nxts_serve, parametro, tipo, strlen((char*)parametro));
     if(!resposta) return false;
 
     data = get_packet_data(resposta);

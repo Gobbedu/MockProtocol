@@ -11,7 +11,7 @@ struct stat st;
 void server_switch(unsigned char * buffer);
 void cdc(unsigned char * buffer);
 void mkdirc(unsigned char * buffer);
-void get(char*buffer);
+void get(unsigned char*buffer);
 
 unsigned int sequencia(void);
 

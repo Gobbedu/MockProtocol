@@ -39,6 +39,7 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
+/*
     int bytes;
     // unsigned char *dado1 = calloc(TAM_PACOTE, sizeof(unsigned char));
     // unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(unsigned char));
@@ -51,7 +52,7 @@ int main()
     if(recebeu)
         envia_msg(soquete, &serv_seq, ACK, recebeu+TAM_HEADER, MAX_DADOS);
 
-/* funciona
+//  funciona
     int len_dado = 63;
     bytes = recv(soquete, dado1, len_dado, 0);
     if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes);
@@ -61,7 +62,7 @@ int main()
     if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes);
     else perror("deu erro:");
 
-/* da problema, some 4 bytes 
+// da problema, some 4 bytes 
     printf("\n========= recebeu pacote com dados\n");
     bytes = recv(soquete, dado1, TAM_PACOTE, 0);
     if(bytes > 0)  read_packet(dado1);
@@ -72,28 +73,23 @@ int main()
     bytes = recv(soquete, dado2, TAM_PACOTE, 0);
     if(bytes > 0)  read_packet(dado2);
     else perror("deu erro:");
-*/
 
     // free(dado1);
     // free(dado2);
+*/
 
 
-    while(0){
-        pacote = recebe(soquete, &serv_seq, &nxts_cli);
+    while(1){
+        pacote = recebe_msg(soquete);
         if(!pacote) 
             continue;
-/*
-        if(get_packet_type(pacote) != CD){
-            while(recv(soquete, buffer, TAM_PACOTE, MSG_PEEK) == 67){
-                recv(soquete, buffer, TAM_PACOTE, 0);
-                nxts_cli++;
-                printf("DISCARTED:\n");
-                read_packet(buffer);
-            }
-            send(soquete, make_packet(sequencia(), NACK, "3", 1), TAM_PACOTE, 0);
+        if(!check_sequence(pacote, nxts_cli)){
+            fprintf(stderr, "esperava sequencia (%d) mas recebeu (%d)\n", nxts_cli, get_packet_sequence(pacote));
             continue;
-        }
-*/
+        }   
+        
+        // recebeu pacote valido
+        next(&nxts_cli);
         read_packet(pacote);
         server_switch(pacote);
         free(pacote);
@@ -159,13 +155,13 @@ void cdc(unsigned char* buffer){
     int resultado, bytes, ret;
     unsigned char *resposta;
     unsigned char *cd, flag[1];
-    cd = (char *) get_packet_data(buffer);
-    unsigned char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    cd = get_packet_data(buffer);
+    unsigned char *d = calloc(strcspn((char*)cd, " "), sizeof(unsigned char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
-    strncpy(d, cd, strcspn(cd, " "));
+    strncpy((char*)d, (char*)cd, strcspn((char*)cd, " "));
 
     if(getcwd(pwd, sizeof(pwd)))printf("before: %s\n", pwd);
-    ret = chdir(d);
+    ret = chdir((char*)d);
     if(getcwd(pwd, sizeof(pwd)))printf("after: %s\n", pwd);
 
     if(ret == -1){
@@ -204,10 +200,10 @@ void cdc(unsigned char* buffer){
 void mkdirc(unsigned char* buffer){
     int bytes, ret, resultado;
     unsigned char *resposta;
-    char *mkdir, flag[1];
+    unsigned char *mkdir, flag[1];
 
     mkdir = get_packet_data(buffer);
-    ret = system(mkdir);
+    ret = system((char*)mkdir);
 
     if(ret != 0){        
         resultado = ERRO;
@@ -240,18 +236,18 @@ void mkdirc(unsigned char* buffer){
     free(mkdir);
 }
 
-void get( char *buffer){
+void get(unsigned char *buffer){
     // int bytes, resultado;
     int bytes;
     // char*resposta_srv, *resposta_cli;
     unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
-    char *get, *mem, flag;
+    unsigned char *get, *mem, flag;
 
     get = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
 
-    arquivo = fopen(get, "r");
+    arquivo = fopen((char*)get, "r");
 
     // ERRO AO LER ARQUIVO, retorna //
     if(!arquivo){        
@@ -283,9 +279,9 @@ void get( char *buffer){
     }
 
     // ARQUIVO ABERTO //
-    stat(get, &st);                     // devolve atributos do arquivo
+    stat((char*)get, &st);                     // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
-    sprintf(mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
+    sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
 
     resposta_srv = make_packet(sequencia(), DESC_ARQ, mem, 16); // string de 16 digitos em bytes
     free(mem);

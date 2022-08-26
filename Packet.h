@@ -77,41 +77,23 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ stream functions ================ */
-char ** chunck_file(unsigned int start_seq, FILE *file, int *arr_size);
-int build_file(char *file, char**packet_array, int array_size);
-void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq);
-void janela_envia4 (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
-int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq);
+int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, unsigned int *other_seq);
 int envia_sequencial (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
 
-int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes);
-char *recebe_msg(int socket);
 unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados);
-
+int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes);
+unsigned char *recebe_msg(int socket);
 
 unsigned int moven(unsigned int *sequence, int n);
 unsigned int next(unsigned int *sequence);
-
-unsigned char *envia(int soquete, unsigned char * packet, unsigned int *expected_seq);
-unsigned char *recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq);
-char *ptoa( char *pacote);
-char *itoa(int sequencia);
+unsigned char *ptoa(unsigned char *pacote);
+unsigned char *itoa(int sequencia);
 
 /* ================ packet functions ================ */
 unsigned char *make_packet(unsigned int sequencia, int tipo, unsigned char* dados, int bytes_dados);
-
 int check_sequence(unsigned char *buffer, int expected_seq);
 int check_parity(unsigned char *buffer);
-
 int calc_packet_parity(unsigned char *buffer);
-// int free_packet(unsigned char* packet);
-
-
-// sequencializacao EH LOCAL
-// unsigned int sequencia(void);
-// unsigned int get_seq(void);
-// unsigned int get_lastseq(void);
-// unsigned int next_seq(void);
 
 /* ================ packet getters ================ */
 unsigned char get_packet_MI(unsigned char* buffer);
