@@ -42,7 +42,11 @@ int main(){
     unsigned char ok[63] = {-43,86,78,91,64,56,32,-127,-103,33,4,81,76,67,-34,110,38,97,41,75,-23,-9,32,119,-24,69,42,-70,76,-60,-100,105,26,-45,48,78,-127,-68,84,-99,75,-77,32,13,49,-20,10,69,-34,-125,107,102,70,12,39,-69,-51,-86,96,71,-6,64,66};
     unsigned char no[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
 
-/* funciona */
+    unsigned char *bruh = "segfault my ass bitch";
+    unsigned char *resposta = envia_recebe(soquete, &client_seq, &nxts_serve, ok, DADOS, len_dado);
+    if(resposta) read_packet(resposta);
+
+/* funciona 
     // send
     bytes = send(soquete, (void*) ok, len_dado, 0);
     if(bytes > 0) print_bytes("enviou dado cru:", ok, bytes);
@@ -53,7 +57,7 @@ int main(){
     else perror("erro send():");
 
 
-/* envia ok */
+/* envia ok 
     printf("\n========= enviou o pacote com dados\n");
     unsigned char *pacote1 = make_packet(14, DADOS, ok, len_dado);
     bytes = send(soquete, pacote1, TAM_PACOTE, 0);
@@ -65,6 +69,7 @@ int main(){
     bytes = send(soquete, pacote2, TAM_PACOTE, 0);
     if( bytes > 0)  read_packet(pacote2);
     free(pacote1);free(pacote2);    
+*/
 
 
     while(0){
@@ -233,13 +238,14 @@ int cliente_sinaliza(char *parametro, int tipo)
     char*resposta;
     char* data;
 
-    /* cria pacote com parametro para cd no server */
-    char*packet = make_packet(sequencia(), tipo, parametro, strlen(parametro));
-    if(!packet)
-        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+    // /* cria pacote com parametro para cd no server */
+    // char*packet = make_packet(sequencia(), tipo, parametro, strlen(parametro));
+    // if(!packet)
+    //     fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
-    // envia pacote pro servidor e aguarda uma resposta
-    resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
+    // // envia pacote pro servidor e aguarda uma resposta
+    // resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
+    resposta = envia_recebe(soquete, client_seq, nxts_serve, (unsigned char*) parametro, tipo, strlen(parametro));
     if(!resposta) return false;
 
     data = get_packet_data(resposta);
@@ -248,7 +254,6 @@ int cliente_sinaliza(char *parametro, int tipo)
         case OK:        // resposta de (cd, mkdir, put)
             printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
             // free_packet(packet);
-            free(packet);
             free(resposta);
             free(data);
             return true;
@@ -257,7 +262,6 @@ int cliente_sinaliza(char *parametro, int tipo)
             read_packet(resposta);
             response_GET(resposta, parametro);  // parametro eh file
             // free_packet(packet);
-            free(packet);
             free(resposta);
             free(data);
             return true;
@@ -265,7 +269,6 @@ int cliente_sinaliza(char *parametro, int tipo)
         case ERRO:      // resposta de (ls, cd, mkdir, put, get)
             printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
             // free_packet(packet);
-            free(packet);
             free(resposta);
             free(data);
             return false;
@@ -278,7 +281,6 @@ int cliente_sinaliza(char *parametro, int tipo)
     read_packet(resposta);
 
     free(resposta);
-    free(packet);
     return false;
 }
 

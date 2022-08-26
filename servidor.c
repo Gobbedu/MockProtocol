@@ -95,7 +95,7 @@ int main()
     printf("servidor terminado\n");
 }
 
-void server_switch( char* buffer)
+void server_switch(unsigned char* buffer)
 {
     int tipo_lido = get_packet_type(buffer);
 
@@ -147,12 +147,12 @@ void server_switch( char* buffer)
 }
 
 
-void cdc( char* buffer){
+void cdc(unsigned char* buffer){
     int resultado, bytes, ret;
-     char *resposta;
-    char *cd, flag[1];
+    unsigned char *resposta;
+    unsigned char *cd, flag[1];
     cd = (char *) get_packet_data(buffer);
-    char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    unsigned char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
     strncpy(d, cd, strcspn(cd, " "));
 
@@ -193,9 +193,9 @@ void cdc( char* buffer){
 // trata_tipos: case switch p/ cada ENUM uma funcao
 // Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
-void mkdirc( char* buffer){
+void mkdirc(unsigned char* buffer){
     int bytes, ret, resultado;
-     char *resposta;
+    unsigned char *resposta;
     char *mkdir, flag[1];
 
     mkdir = get_packet_data(buffer);
@@ -236,7 +236,7 @@ void get( char *buffer){
     // int bytes, resultado;
     int bytes;
     // char*resposta_srv, *resposta_cli;
-     char *resposta_srv, resposta_cli[TAM_PACOTE];
+    unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
     char *get, *mem, flag;
 
     get = get_packet_data(buffer);  // arquivo a abrir
