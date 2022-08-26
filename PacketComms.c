@@ -303,7 +303,6 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 {
     int bytes, tentativas;
     unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
-    read_packet(packet);
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         return false;
@@ -322,7 +321,8 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
         if(bytes == sizeof(unsigned short int)*TAM_PACOTE)
             break;
     }
-
+    printf("enviou %d bytes\n", bytes);
+    read_packet(packet);
     if(tentativas == NTENTATIVAS){
         free(packet);
         printf("\nnn deu \n");
