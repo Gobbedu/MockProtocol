@@ -71,7 +71,7 @@ int main(){
 */
 
 
-    while(0){
+    while(1){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
 
@@ -242,7 +242,7 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
     if(!packet)
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
-    // // envia pacote pro servidor e aguarda uma resposta
+    // envia pacote pro servidor e aguarda uma resposta
     resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
     // resposta = envia_recebe(soquete, &client_seq, &nxts_serve, parametro, tipo, strlen((char*)parametro));
     if(!resposta) return false;

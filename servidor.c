@@ -20,7 +20,6 @@ int soquete;
 unsigned int serv_seq = 10;   // current server sequence
 unsigned int nxts_cli = 0;   // expected next client sequence
 
-
 /* sniff sniff */
 int main()
 {
@@ -28,7 +27,7 @@ int main()
     // int check;
     // char*resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
     // charbuffer[TAM_PACOTE];
-    unsigned char* pacote;
+    unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("eno1");
@@ -39,6 +38,46 @@ int main()
     tv.tv_usec = 0;
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
+
+/*
+    int bytes;
+    // unsigned char *dado1 = calloc(TAM_PACOTE, sizeof(unsigned char));
+    // unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(unsigned char));
+    unsigned char dado1[TAM_PACOTE];
+    memset(dado1, 0, TAM_PACOTE);
+    unsigned char dado2[TAM_PACOTE];
+    memset(dado2, 0, TAM_PACOTE);
+
+    unsigned char * recebeu = recebe_msg(soquete);
+    if(recebeu)
+        envia_msg(soquete, &serv_seq, ACK, recebeu+TAM_HEADER, MAX_DADOS);
+
+//  funciona
+    int len_dado = 63;
+    bytes = recv(soquete, dado1, len_dado, 0);
+    if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes);
+    else perror("deu erro:");
+
+    bytes = recv(soquete, dado2, len_dado, 0);
+    if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes);
+    else perror("deu erro:");
+
+// da problema, some 4 bytes 
+    printf("\n========= recebeu pacote com dados\n");
+    bytes = recv(soquete, dado1, TAM_PACOTE, 0);
+    if(bytes > 0)  read_packet(dado1);
+    else perror("deu erro:");
+
+    sleep(1);printf("\n");
+
+    bytes = recv(soquete, dado2, TAM_PACOTE, 0);
+    if(bytes > 0)  read_packet(dado2);
+    else perror("deu erro:");
+
+    // free(dado1);
+    // free(dado2);
+*/
+
 
     while(1){
         // pacote = recebe(soquete, &serv_seq, &nxts_cli);
@@ -126,15 +165,14 @@ void server_switch(unsigned char* buffer)
 void cdc(unsigned char* buffer){
     int resultado, bytes, ret;
     unsigned char *resposta;
-    char *cd;
-    unsigned char flag[1];
-    cd = (char *) get_packet_data(buffer);
-    char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
+    unsigned char *cd, flag[1];
+    cd = get_packet_data(buffer);
+    unsigned char *d = calloc(strcspn((char*)cd, " "), sizeof(unsigned char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
-    strncpy(d, cd, strcspn(cd, " "));
+    strncpy((char*)d, (char*)cd, strcspn((char*)cd, " "));
 
     if(getcwd(pwd, sizeof(pwd)))printf("before: %s\n", pwd);
-    ret = chdir(d);
+    ret = chdir((char*)d);
     if(getcwd(pwd, sizeof(pwd)))printf("after: %s\n", pwd);
 
     if(ret == -1){
