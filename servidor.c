@@ -29,10 +29,10 @@ int main()
     // charbuffer[TAM_PACOTE];
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
-    soquete = ConexaoRawSocket("enp2s0f1"); // note anderson
-    // soquete = ConexaoRawSocket("enp2s0"); // desktop anderson
-    // soquete = ConexaoRawSocket("eno1");
-    // soquete = ConexaoRawSocket("enp3s0");
+    soquete = ConexaoRawSocket("enp2s0f1");     // note anderson
+    // soquete = ConexaoRawSocket("enp2s0");    // desktop anderson
+    // soquete = ConexaoRawSocket("eno1");      // desktop andesor c3
+    // soquete = ConexaoRawSocket("enp3s0");    // note gobbo
 
     struct timeval tv;
     tv.tv_sec = 3;
