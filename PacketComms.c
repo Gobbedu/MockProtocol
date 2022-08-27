@@ -45,11 +45,11 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
             }
 
             bytes = recv(soquete, (void*) resposta, TAM_PACOTE, 0); 
-            if(errno == EAGAIN || errno == EWOULDBLOCK){    // se ocorreu timeout
-                printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
-                timeout++;
-                continue;
-            }
+            // if(errno == EAGAIN || errno == EWOULDBLOCK){    // se ocorreu timeout
+            //     printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
+            //     timeout++;
+            //     continue;
+            // }
 
             // VERIFICA //
             if (bytes <= 0) continue;                                   // algum erro no recv
@@ -661,6 +661,7 @@ int build_file(char *file, char**packet_array, int array_size)
     return true;
 }
 
+
 // envia uma mensagem para o socket, com verificacao de send() bytes > 0
 // retorna true se enviou com sucesso, e falso c.c., atualizando a sequencia de acordo
 // tenta enviar mensagem NTENTATIVAS vezes
@@ -709,16 +710,16 @@ char*recebe_msg(int socket)
     while(tentativas < NTENTATIVAS){
         bytes = recv(socket, (void*) resposta, TAM_PACOTE, 0); 
         // se ocorreu timeout
-        if(errno == EAGAIN || errno == EWOULDBLOCK){     
-            fprintf(stderr, "tentativa (%d), ", tentativas+1);   
-            perror("ERRO timeout recebe_msg()");
-            tentativas++;
-            continue;
-        }
+        // if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        //     fprintf(stderr, "tentativa (%d), ", tentativas+1);   
+        //     perror("ERRO timeout recebe_msg()");
+        //     tentativas++;
+        //     continue;
+        // }
 
         // algum erro no recv
         if (bytes <= 0){    
-            perror("ERRO recebe_mgs() recv <= 0");
+            // perror("ERRO recebe_mgs() recv <= 0");
             tentativas++;
             continue;
         }                                   
@@ -745,8 +746,83 @@ char*recebe_msg(int socket)
     return pacote;
 }
 
+/* 
+// envia uma mensagem para o socket, com verificacao de send() bytes > 0
+// retorna true se enviou com sucesso, e falso c.c., atualiza a sequencia
+// tenta enviar mensagem NTENTATIVAS vezes
+int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
+{
+    int bytes, tentativas;
+    unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
+    read_packet(packet);
+    if(!packet){
+        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+        return false;
+    }
 
+    // unsigned short int *mascara = calloc(TAM_PACOTE, sizeof(unsigned short int));
+    // unsigned short int mascara[TAM_PACOTE];
+    // memset(mascara, 0, sizeof(unsigned short int)*TAM_PACOTE);
+    // for(int i = 0; i < TAM_PACOTE; i++)
+    //     mascara[i] = (unsigned short int) packet[i];
 
+    // tentativas = 0;
+    // while(tentativas < NTENTATIVAS){
+    for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
+        bytes = send(socket, packet, sizeof(unsigned short int)*TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes == sizeof(unsigned short int)*TAM_PACOTE)
+            break;
+    }
+
+    if(tentativas == NTENTATIVAS){
+        free(packet);
+        printf("\nnn deu \n");
+        return false;
+    }
+
+    // printf("sent (%d) bytes\n", bytes);
+    // read_packet(packet);
+    next(this_seq);
+    free(packet);
+    return true;
+}
+
+// recebe uma mensagem do socket, tenta receber mensagem NTENTATIVAS vezes, deve receber free()
+// verifica se recv deu timeout, bytes > 0 e se eh nosso pacote, NAO atualiza a sequencia
+// retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
+unsigned char *recebe_msg(int socket)
+{
+    // unsigned char buffer[TAM_PACOTE];
+    unsigned short int buffer[TAM_PACOTE];
+    int bytes, i;
+
+    // int len_dado = sizeof(unsigned short int);
+    int len_dado = sizeof(unsigned char);
+
+    // VERIFICA //
+    for(i = 0; i < NTENTATIVAS; i++){
+        memset(buffer, 0, len_dado*TAM_PACOTE);
+        bytes = recv(socket, buffer, len_dado*TAM_PACOTE, 0);        // recebe dados do socket
+        if (bytes == len_dado*TAM_PACOTE)                           // recebeu tamanho do pacote
+            // if (is_our_mask(buffer))                      // e eh nosso pacote
+            if(is_our_packet(buffer))
+                break;
+    }
+
+    // nao recebeu pacote valido
+    if(i == NTENTATIVAS) 
+        return NULL;
+
+    printf("leu (%d) bytes\n", bytes);
+
+    unsigned char *pacote = calloc(TAM_PACOTE, sizeof(unsigned char));
+    for(int i = 0; i < TAM_PACOTE; i++)
+        pacote[i] = (unsigned char) buffer[i];
+
+    // recebeu pacote valido //
+    return pacote;
+}
+*/
 
 
 // atualiza sequencia dada para a proxima sequencia
