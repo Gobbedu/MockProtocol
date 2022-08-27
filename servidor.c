@@ -39,7 +39,7 @@ int main()
 
     while(1){
         // pacote = recebe(soquete, &serv_seq, &nxts_cli);
-        pacote = recebe_msg(soquete);
+         pacote = recebe_msg(soquete);
         if(!pacote) 
             continue;
         if(!check_sequence(pacote, nxts_cli))
