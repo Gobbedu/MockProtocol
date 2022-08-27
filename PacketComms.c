@@ -19,7 +19,8 @@
 char*envia(int soquete, char * packet, unsigned int *expected_seq)
 {
     int bytes, timeout, lost_conn, resend;
-    char resposta[TAM_PACOTE];
+    // char resposta[TAM_PACOTE];
+    char *resposta;
     char* data;
 
     // exit if recebe 3 timeouts da funcao
@@ -44,16 +45,21 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
                 break;
             }
 
-            bytes = recv(soquete, (void*) resposta, TAM_PACOTE, 0); 
-            if(errno == EAGAIN || errno == EWOULDBLOCK){    // se ocorreu timeout
-                printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
-                timeout++;
-                continue;
+            resposta = recebe_msg(soquete);
+            if(!resposta){
+                lost_conn++;
+                break;
             }
+            // bytes = recv(soquete, (void*) resposta, TAM_PACOTE, 0); 
+            // if(errno == EAGAIN || errno == EWOULDBLOCK){    // se ocorreu timeout
+            //     printf("recv error : (%s); errno: (%d)\n", strerror(errno), errno);
+            //     timeout++;
+            //     continue;
+            // }
 
-            // VERIFICA //
-            if (bytes <= 0) continue;                                   // algum erro no recv
-            if (!is_our_packet(resposta)) continue;    // nao eh nosso pacote
+            // // VERIFICA //
+            // if (bytes <= 0) continue;                                   // algum erro no recv
+            // if (!is_our_packet(resposta)) continue;    // nao eh nosso pacote
             // read_packet(resposta);
             // por enquanto se sequencia errada, ignora
             // talvez o certo seja nack(sequencia esperada)
@@ -106,6 +112,7 @@ char*recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
     // VERIFICA //
     if (bytes<=0) return NULL;                 // se erro ou vazio, ignora
     if (!is_our_packet(buffer)) return NULL;   // se nao eh nosso pacote, ignora
+    /*
     if (!check_sequence((char *) buffer, *expected_seq)){
         // sequencia diferente: ignora
         printf("server expected %d but got %d as a sequence\n", *expected_seq, get_packet_sequence(buffer));
@@ -126,7 +133,7 @@ char*recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
         free(resposta);
         return NULL;                                         
     }
-
+    */
     // VERIFICA & !NACK, devolve pacote
     char*pacote = calloc(TAM_PACOTE, sizeof(char ));
     memcpy(pacote, buffer, TAM_PACOTE);
@@ -323,7 +330,8 @@ void janela_envia4(int socket, FILE *file, unsigned int *this_seq, unsigned int 
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
     int leu_sz, max_data, blocks = 0;
-    char resposta[TAM_PACOTE];
+    // char resposta[TAM_PACOTE];
+    char *resposta;
     char *data;
     int try, bytes, leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
@@ -369,27 +377,32 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         // int bytes = recv(socket, resposta, TAM_PACOTE, 0);
       
         // tentar fazer do jeito certo abaixo
-
+        resposta = recebe_msg(socket);
+        if(!resposta){
+            try++;
+            moven(this_seq, -1);
+            continue;
+        }
         // while(try < NTENTATIVAS){
-            bytes = recv(socket, resposta, TAM_PACOTE, 0);
-        //     if(errno == EAGAIN || errno == EWOULDBLOCK){     
-        //         fprintf(stderr, "tentativa (%d), ", try+1);   
-        //         perror("ERRO timeout recebe_msg()");
+        //     bytes = recv(socket, resposta, TAM_PACOTE, 0);
+        // //     if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        // //         fprintf(stderr, "tentativa (%d), ", try+1);   
+        // //         perror("ERRO timeout recebe_msg()");
+        // //         try++;
+        // //         continue;
+        // //     }
+        // // }
+        //     if(bytes <= 0){
         //         try++;
+        //         moven(this_seq, -1);
+        //         perror("ERRO ao receber pacote em recebe_sequencial");
         //         continue;
         //     }
-        // }
-            if(bytes <= 0){
-                try++;
-                moven(this_seq, -1);
-                perror("ERRO ao receber pacote em recebe_sequencial");
-                continue;
-            }
-            if(!is_our_packet(resposta)){
-                moven(this_seq, -1);
-                try++;
-                continue;
-            }try = 0;
+        //     if(!is_our_packet(resposta)){
+        //         moven(this_seq, -1);
+        //         try++;
+        //         continue;
+        //     }try = 0;
             // break;
         read_packet(resposta);
 
@@ -705,20 +718,21 @@ char*recebe_msg(int socket)
     int bytes, tentativas;
 
     // resposta = calloc(TAM_PACOTE, sizeof(char ));
+/*
     tentativas = 0;
     while(tentativas < NTENTATIVAS){
         bytes = recv(socket, (void*) resposta, TAM_PACOTE, 0); 
         // se ocorreu timeout
-        if(errno == EAGAIN || errno == EWOULDBLOCK){     
-            fprintf(stderr, "tentativa (%d), ", tentativas+1);   
-            perror("ERRO timeout recebe_msg()");
-            tentativas++;
-            continue;
-        }
+        // if(errno == EAGAIN || errno == EWOULDBLOCK){     
+        //     fprintf(stderr, "tentativa (%d), ", tentativas+1);   
+        //     perror("ERRO timeout recebe_msg()");
+        //     tentativas++;
+        //     continue;
+        // }
 
         // algum erro no recv
         if (bytes <= 0){    
-            perror("ERRO recebe_mgs() recv <= 0");
+            // perror("ERRO recebe_mgs() recv <= 0");
             tentativas++;
             continue;
         }                                   
@@ -732,7 +746,13 @@ char*recebe_msg(int socket)
         tentativas = 0;
         break;        
     } 
-
+    */
+    for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
+        bytes = recv(socket, (void*) resposta, TAM_PACOTE, 0); 
+        if(bytes == TAM_PACOTE)
+            if(is_our_packet(resposta))
+                break;
+    }
     // nao deu certo, bateu no limite de tentativas
     if(tentativas == NTENTATIVAS){
         // if(resposta) free(resposta);

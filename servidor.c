@@ -3,10 +3,7 @@
 #include "ConexaoRawSocket.h"
 #include <sys/stat.h>
 
-// - [] CHECAR FUNCAO check_packet sem loopback, MUDA CALCULO DA PARIDADE int paradis = 1;
 // - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
-// - [] tratar da sequencia de mkdirc e cdc, caso algo de errado, senao sequencia nunca emparelha dnv
-// - [] tratar next_seq do cliente e do servidor, update quando aceita
 // - [] sequencia do GET ta quebrada
 // - [] responder NACK se erro na paridade da msg recebida do cliente
 // - [] get: se nack responde e espera outra msg
@@ -31,7 +28,8 @@ int main()
      char* pacote;
     // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("eno1");
+    // soquete = ConexaoRawSocket("eno1");
+    soquete = ConexaoRawSocket("enp3s0");
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -40,9 +38,15 @@ int main()
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
     while(1){
-        pacote = recebe(soquete, &serv_seq, &nxts_cli);
+        // pacote = recebe(soquete, &serv_seq, &nxts_cli);
+        pacote = recebe_msg(soquete);
         if(!pacote) 
             continue;
+        if(!check_sequence(pacote, nxts_cli))
+            continue;
+        if(!check_parity(pacote))
+            continue;
+        next(&nxts_cli);
 /*
         if(get_packet_type(pacote) != CD){
             while(recv(soquete, buffer, TAM_PACOTE, MSG_PEEK) == 67){
