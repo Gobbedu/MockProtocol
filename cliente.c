@@ -245,13 +245,13 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
     unsigned char *data;
 
     // /* cria pacote com parametro para cd no server */
-    unsigned char*packet = make_packet(sequencia(), tipo, parametro, strlen((char*)parametro));
-    if(!packet)
-        fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
+    // unsigned char*packet = make_packet(sequencia(), tipo, parametro, strlen((char*)parametro));
+    // if(!packet)
+    //     fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
 
     // envia pacote pro servidor e aguarda uma resposta
-    resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
-    // resposta = envia_recebe(soquete, &client_seq, &nxts_serve, parametro, tipo, strlen((char*)parametro));
+    // resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
+    resposta = envia_recebe(soquete, &client_seq, &nxts_serve, parametro, tipo, strlen((char*)parametro));
     if(!resposta) return false;
 
     data = get_packet_data(resposta);

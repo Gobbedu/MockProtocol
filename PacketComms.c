@@ -486,7 +486,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     // COLOCA MASCARA
     len_byte = sizeof(unsigned int);
     unsigned int mask[TAM_PACOTE];
-    memset(mask, 0, len_byte*TAM_PACOTE);
+    memset(mask, 255, len_byte*TAM_PACOTE); // mascarar com 0, 1, 170, 85, 255, nao funciona
     for(int i = 0; i < TAM_PACOTE; i++)
         mask[i] = (unsigned int) packet[i];
     
@@ -542,6 +542,9 @@ unsigned char *recebe_msg(int socket)
     // remove mascara do pacote
     for(int j = 0; j < TAM_PACOTE; j++)
         pacote[j] = (unsigned char) buffer[j];
+        
+    printf("RECEBEU (%d) BYTES\n", bytes);
+    read_packet(pacote);
 
     // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
