@@ -3,7 +3,10 @@
 #include "ConexaoRawSocket.h"
 #include <sys/stat.h>
 
+// - [] CHECAR FUNCAO check_packet sem loopback, MUDA CALCULO DA PARIDADE int paradis = 1;
 // - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
+// - [] tratar da sequencia de mkdirc e cdc, caso algo de errado, senao sequencia nunca emparelha dnv
+// - [] tratar next_seq do cliente e do servidor, update quando aceita
 // - [] sequencia do GET ta quebrada
 // - [] responder NACK se erro na paridade da msg recebida do cliente
 // - [] get: se nack responde e espera outra msg
