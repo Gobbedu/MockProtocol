@@ -484,11 +484,11 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // COLOCA MASCARA
-    len_byte = sizeof(unsigned short int);
-    unsigned short int mask[TAM_PACOTE];
+    len_byte = sizeof(unsigned int);
+    unsigned int mask[TAM_PACOTE];
     memset(mask, 0, len_byte*TAM_PACOTE);
     for(int i = 0; i < TAM_PACOTE; i++)
-        mask[i] = (unsigned short int) packet[i];
+        mask[i] = (unsigned int) packet[i];
     
     // ENVIA MASCARA
     for(i = 0; i < len_byte*NTENTATIVAS; i++){
@@ -517,10 +517,10 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned short int buffer[TAM_PACOTE];
+    unsigned int buffer[TAM_PACOTE];
     int bytes, len_byte, i;
 
-    len_byte = sizeof(unsigned short int);
+    len_byte = sizeof(unsigned int);
 
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){

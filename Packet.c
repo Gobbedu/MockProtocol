@@ -101,7 +101,7 @@ int is_our_packet(unsigned char *buffer)
     return header->MI == MARCADOR_INICIO;
 }
 
-int is_our_mask(unsigned short int *buffer)
+int is_our_mask(unsigned int *buffer)
 {
     unsigned char header[TAM_HEADER];
     for(int i = 0; i < TAM_HEADER; i++)
