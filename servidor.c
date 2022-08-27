@@ -29,7 +29,8 @@ int main()
     // charbuffer[TAM_PACOTE];
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
-    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    soquete = ConexaoRawSocket("enp2s0f1"); // note anderson
+    // soquete = ConexaoRawSocket("enp2s0"); // desktop anderson
     // soquete = ConexaoRawSocket("eno1");
     // soquete = ConexaoRawSocket("enp3s0");
 
