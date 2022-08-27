@@ -28,7 +28,7 @@ int main()
     // int check;
     // char*resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
     // charbuffer[TAM_PACOTE];
-     char* pacote;
+    unsigned char* pacote;
     // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("eno1");
@@ -71,7 +71,7 @@ int main()
     printf("servidor terminado\n");
 }
 
-void server_switch( char* buffer)
+void server_switch(unsigned char* buffer)
 {
     int tipo_lido = get_packet_type(buffer);
 
@@ -123,10 +123,11 @@ void server_switch( char* buffer)
 }
 
 
-void cdc( char* buffer){
+void cdc(unsigned char* buffer){
     int resultado, bytes, ret;
-     char *resposta;
-    char *cd, flag[1];
+    unsigned char *resposta;
+    char *cd;
+    unsigned char flag[1];
     cd = (char *) get_packet_data(buffer);
     char *d = calloc(strcspn(cd, " "), sizeof(char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
@@ -169,13 +170,13 @@ void cdc( char* buffer){
 // trata_tipos: case switch p/ cada ENUM uma funcao
 // Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
-void mkdirc( char* buffer){
+void mkdirc(unsigned char* buffer){
     int bytes, ret, resultado;
-     char *resposta;
-    char *mkdir, flag[1];
+    unsigned char *resposta;
+    unsigned char *mkdir, flag[1];
 
     mkdir = get_packet_data(buffer);
-    ret = system(mkdir);
+    ret = system((char*)mkdir);
 
     if(ret != 0){        
         resultado = ERRO;
@@ -203,22 +204,22 @@ void mkdirc( char* buffer){
     if(bytes<0)                                         // pega erros, se algum
         printf("error: %s\n", strerror(errno));         // print detalhes do erro
 
-    free_packet(resposta);
+    free(resposta);
     free(mkdir);
 }
 
-void get( char *buffer){
+void get(unsigned char *buffer){
     // int bytes, resultado;
     int bytes;
     // char*resposta_srv, *resposta_cli;
-     char *resposta_srv, resposta_cli[TAM_PACOTE];
-    char *get, *mem, flag;
+    unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
+    unsigned char *get, *mem, flag;
 
     get = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
 
-    arquivo = fopen(get, "r");
+    arquivo = fopen((char*)get, "r");
 
     // ERRO AO LER ARQUIVO, retorna //
     if(!arquivo){        
@@ -250,9 +251,9 @@ void get( char *buffer){
     }
 
     // ARQUIVO ABERTO //
-    stat(get, &st);                     // devolve atributos do arquivo
+    stat((char*)get, &st);                     // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
-    sprintf(mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
+    sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
 
     resposta_srv = make_packet(sequencia(), DESC_ARQ, mem, 16); // string de 16 digitos em bytes
     free(mem);

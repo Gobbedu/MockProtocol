@@ -16,12 +16,12 @@
  * retorna NULL se perde conexao ou o pacote se recebe resposta esperada
  * atualiza expected_seq, se deu certo
  */ 
-char*envia(int soquete, char * packet, unsigned int *expected_seq)
+unsigned char*envia(int soquete,unsigned char * packet, unsigned int *expected_seq)
 {
     int bytes, timeout, lost_conn, resend;
     // char resposta[TAM_PACOTE];
-    char *resposta;
-    char* data;
+    unsigned char *resposta;
+    unsigned char* data;
 
     // exit if recebe 3 timeouts da funcao
     timeout = lost_conn = 0;
@@ -60,7 +60,7 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
             // precisa checar paridade, servidor responde dnv (???????????) nao sei
             // Paridade diferente: NACK 
             // mensagem recebida mas nao compreendida, reenviar
-            if (!check_parity ((char*)resposta)){             
+            if (!check_parity (resposta)){             
                 data = get_packet_data(resposta);
                 printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
 
@@ -73,7 +73,7 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
             // SE VERIFICADO & !NACK //
             // devolve resposta //
             // printf("pacote enviado recebeu resposta!\n");
-            char*pacote = calloc(TAM_PACOTE, sizeof(char ));
+            unsigned char*pacote = calloc(TAM_PACOTE, sizeof(char ));
             // read_packet(resposta);
             memcpy(pacote, resposta, TAM_PACOTE);
             *expected_seq = ((*expected_seq)+1)%MAX_SEQUENCE;
@@ -91,9 +91,9 @@ char*envia(int soquete, char * packet, unsigned int *expected_seq)
 char*recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
 {
     int bytes;
-    char *seq;
-    char*resposta;
-    char buffer[TAM_PACOTE];
+    // char *seq;
+    // unsigned char *resposta;
+    unsigned char buffer[TAM_PACOTE];
     bytes = recv(soquete, buffer, TAM_PACOTE, 0);       // recebe dados do socket
 
     // VERIFICA //
@@ -134,9 +134,9 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 {
     int leu_sz, max_data, blocks = 0;
     // char resposta[TAM_PACOTE];
-    char *resposta;
-    char *data;
-    int try, bytes, leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
+    unsigned char *resposta;
+    unsigned char *data;
+    int try, leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
     printf("envia sequencial start\n");
     rewind(file);
@@ -227,18 +227,18 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     return true;
 }
 
-int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq){    
+int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
-    int wrote, len_data, try, bytes;
+    int wrote, len_data, try;
     // char pacote[TAM_PACOTE];
-    char *pacote;
+    unsigned char *pacote;
     // char*pacote;
-    char *seq;
+    unsigned char *seq;
 
     printf("recebe sequencial start\n");
 
     // DESTINO //
-    char *dest = calloc(6+strlen(file), sizeof(char));
+    char *dest = calloc(6+strlen((char*)file), sizeof(char));
     sprintf(dest, "(copy)%s", file);
     
     FILE *dst = fopen(dest, "w");
@@ -312,26 +312,24 @@ int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned i
     }
     return true;
 }
-
+/*
 // retorna array de pacotes (char *), todos tem tamanho cte (67 bytes)
 char**chunck_file(unsigned int start_seq, FILE *src, int *arr_size)
 {
     char**array, **bigger_array;
     int eof, leu_sz, max_data;
-    char *data;
+    unsigned char *data;
 
     int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
     int allocd_sz = 1;          // memoria alocada no vetor de retorno
     *arr_size = 0;              // blocos utilizados no vetor
     
-    /*
-    // ABRE ARQUIVO //
-    FILE *src = fopen(file, "r");                           // arquivo a enviar
-    if(src == NULL){
-        printf("something went wrong opening file (%s)\n return\n", file);
-        return NULL;
-    }
-    */
+    // // ABRE ARQUIVO //
+    // FILE *src = fopen(file, "r");                           // arquivo a enviar
+    // if(src == NULL){
+    //     printf("something went wrong opening file (%s)\n return\n", file);
+    //     return NULL;
+    // }
 
     // LIMITE CAMPO DADOS //
     max_data = TAM_PACOTE - sizeof(envelope_packet) - 1;        // total - header - paridade
@@ -427,14 +425,14 @@ int build_file(char *file, char**packet_array, int array_size)
     free(packet_array);
     return true;
 }
-
+*/
 // envia uma mensagem para o socket, com verificacao de send() bytes > 0
 // retorna true se enviou com sucesso, e falso c.c., atualizando a sequencia de acordo
 // tenta enviar mensagem NTENTATIVAS vezes
-int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int n_bytes)
+int envia_msg(int socket, unsigned int *this_seq, int tipo,unsigned char *parametro, int n_bytes)
 {
     int bytes, tentativas;
-    char*packet = make_packet(*this_seq, tipo, parametro, n_bytes);
+    unsigned char*packet = make_packet(*this_seq, tipo, parametro, n_bytes);
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         return false;
@@ -466,9 +464,9 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int
 // recebe uma mensagem do socket, tenta receber mensagem NTENTATIVAS vezes, deve receber free()
 // verifica se recv deu timeout, bytes > 0 e se eh nosso pacote
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
-char*recebe_msg(int socket)
+unsigned char*recebe_msg(int socket)
 {
-    char*pacote, resposta[TAM_PACOTE];
+    unsigned char*pacote, resposta[TAM_PACOTE];
     int bytes, tentativas;
 
     for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
@@ -507,16 +505,16 @@ unsigned int moven(unsigned int *sequence, int n)
 }
 
 // transorma sequencia do pacote em string, deve receber free()
-char *ptoa(char*pacote){
-    char *text = calloc(2, sizeof(char));
-    sprintf(text, "%d", get_packet_sequence(pacote));
+unsigned char *ptoa(unsigned char*pacote){
+    unsigned char *text = calloc(2, sizeof(char));
+    sprintf((char*)text, "%d", get_packet_sequence(pacote));
     return text;
 }
 
 // transorma inteiro em string, deve receber free()
-char *itoa(int sequencia){
-    char *text = calloc(2, sizeof(char));
-    sprintf(text, "%d", sequencia);
+unsigned char *itoa(int sequencia){
+    unsigned char *text = calloc(2, sizeof(char));
+    sprintf((char*)text, "%d", sequencia);
     return text;
 }
 

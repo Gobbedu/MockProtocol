@@ -11,11 +11,18 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 // VAR GLOBAL //
 
-#define TAM_PACOTE      67
+/* estrutura do packet
+ * | MI 8b | Tamanho 6b | Sequencia 4b | Tipo 6b | Dados 0 - 63 bytes(6b tamanho) |  Paridade  8b  |
+ * {            24 bits = 3 bytes                }                                { 8 bits = 1 byte} // total 67 bytes
+ */
+
+#define TAM_PACOTE      67 // [0, 66]
 #define MAX_DADOS       63
+#define TAM_HEADER      3   
 #define MAX_SEQUENCE    16  // para usar em modulo, limite eh na verdade 15
 #define COMMAND_BUFF    100
 #define PATH_MAX        100
@@ -47,7 +54,7 @@ enum TIPOS {
 
 // variaveis globais definidas no .c, mas declaradas no .h
 // respostas de erro no servidor & constantes
-extern char  
+extern unsigned char  
                 dir_nn_E       , 
                 sem_permissao  , 
                 dir_ja_E       , 
@@ -70,55 +77,40 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ stream functions ================ */
-char ** chunck_file(unsigned int start_seq, FILE *file, int *arr_size);
-int build_file(char *file, char**packet_array, int array_size);
-void janela_recebe4(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq);
-void janela_envia4 (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
-int recebe_sequencial(int socket, char *file, unsigned int *this_seq, unsigned int *other_seq);
+int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, unsigned int *other_seq);
 int envia_sequencial (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
 
-int envia_msg(int socket, unsigned int *this_seq, int tipo, char *parametro, int n_bytes);
-char *recebe_msg(int socket);
+unsigned char*envia(int soquete,unsigned char * packet, unsigned int *expected_seq);
+unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados);
+int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes);
+unsigned char *recebe_msg(int socket);
 
 unsigned int moven(unsigned int *sequence, int n);
 unsigned int next(unsigned int *sequence);
-
- char *envia(int soquete, char * packet, unsigned int *expected_seq);
- char *recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq);
-char *ptoa( char *pacote);
-char *itoa(int sequencia);
+unsigned char *ptoa(unsigned char *pacote);
+unsigned char *itoa(int sequencia);
 
 /* ================ packet functions ================ */
- char* make_packet(unsigned int sequencia, int tipo, char* dados, int bytes_dados);
-
-int check_sequence( char *buffer, int expected_seq);
-int check_parity( char *buffer);
-
-int calc_packet_parity( char *buffer);
-int free_packet( char* packet);
-
-
-// sequencializacao EH LOCAL
-// unsigned int sequencia(void);
-// unsigned int get_seq(void);
-// unsigned int get_lastseq(void);
-// unsigned int next_seq(void);
+unsigned char *make_packet(unsigned int sequencia, int tipo, unsigned char* dados, int bytes_dados);
+int check_sequence(unsigned char *buffer, int expected_seq);
+int check_parity(unsigned char *buffer);
+int calc_packet_parity(unsigned char *buffer);
 
 /* ================ packet getters ================ */
-char get_packet_MI( char* buffer);
-int get_packet_tamanho( char* buffer);
-int get_packet_sequence( char* buffer);
-int get_packet_type( char* buffer);
-char* get_packet_data( char* buffer);
-int get_packet_parity( char* buffer);
-int get_packet_len( char* buffer);
-char *get_type_packet( char* buffer);
+unsigned char get_packet_MI(unsigned char* buffer);
+int get_packet_tamanho(unsigned char* buffer);
+int get_packet_sequence(unsigned char* buffer);
+int get_packet_type(unsigned char* buffer);
+unsigned char* get_packet_data(unsigned char* buffer);
+int get_packet_parity(unsigned char* buffer);
+int get_packet_len(unsigned char* buffer);
+char *get_type_packet(unsigned char* buffer);
 
 
 /* ================ funcoes auxiliares ================ */
-void read_packet( char *buffer);
-int is_our_packet( char *buffer);
+void read_packet(unsigned char *buffer);
+int is_our_packet(unsigned char *buffer);
 int is_valid_type(int tipo);
-
+void print_bytes(char *nome,unsigned char *buf, int n);
 
 #endif
