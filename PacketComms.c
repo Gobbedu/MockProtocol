@@ -334,29 +334,39 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 // tenta enviar mensagem NTENTATIVAS vezes
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
 {
-    int bytes, tentativas;
+    int bytes, len_byte, i;
+    // CRIA PACOTE
     unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         return false;
     }
 
-    // tentativas = 0;
-    // while(tentativas < NTENTATIVAS){
-    for(tentativas = 0; tentativas < NTENTATIVAS; tentativas++){
-        bytes = send(socket, packet, TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes == TAM_PACOTE)
+    // COLOCA MASCARA
+    len_byte = sizeof(unsigned short int);
+    unsigned short int mask[TAM_PACOTE];
+    memset(mask, 0, len_byte*TAM_PACOTE);
+    for(int i = 0; i < TAM_PACOTE; i++)
+        mask[i] = (unsigned short int) packet[i];
+    
+    // ENVIA MASCARA
+    for(i = 0; i < len_byte*NTENTATIVAS; i++){
+        bytes = send(socket, mask, len_byte*TAM_PACOTE, 0);       // envia packet para o socket
+        if(bytes == len_byte*TAM_PACOTE)
             break;
     }
 
-    if(tentativas == NTENTATIVAS){
+    // NAO ENVIOU MASCARA
+    if(i == NTENTATIVAS){
+        fprintf(stderr, "NAO FOI POSSIVEL ENVIAR MASCARA\n");
         free(packet);
         return false;
     }
 
-    next(this_seq);
+    // MASCARA FOI ENVIADA
     printf("SENT (%d) BYTES\n", bytes);
     read_packet(packet);
+    next(this_seq);
     free(packet);
     return true;
 }
@@ -366,15 +376,17 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned char buffer[TAM_PACOTE];
-    int bytes, i;
+    unsigned short int buffer[TAM_PACOTE];
+    int bytes, len_byte, i;
+
+    len_byte = sizeof(unsigned short int);
 
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
-        memset(buffer, 0, TAM_PACOTE);
-        bytes = recv(socket, buffer, TAM_PACOTE, 0);        // recebe dados do socket
-        if (bytes == TAM_PACOTE)                           // recebeu tamanho do pacote
-            if (is_our_packet(buffer))                      // e eh nosso pacote
+        memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
+        bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
+        if (bytes == len_byte*TAM_PACOTE)                           // recebeu tamanho do pacote
+            if (is_our_mask(buffer))                                // e eh nosso pacote
                 break;
     }
 
@@ -384,7 +396,12 @@ unsigned char *recebe_msg(int socket)
 
     // recebeu pacote valido //
     unsigned char *pacote = calloc(TAM_PACOTE, sizeof(char ));
-    memcpy(pacote, buffer, TAM_PACOTE);
+
+    // remove mascara do pacote
+    for(int j = 0; j < TAM_PACOTE; j++)
+        pacote[j] = (unsigned char) buffer[j];
+
+    // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
 }
 
