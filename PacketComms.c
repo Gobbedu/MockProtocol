@@ -174,6 +174,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         if(!resposta){
             printf("timeo recebe_msg() envia_sequencial (ACK, NACK)\n");
             tentativas++;
+            moven(this_seq, -1);
             continue;
         }   tentativas = 0;
        
@@ -188,7 +189,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
             return false;
         }   
         enviou = true;
-        next(this_seq);
+        // next(this_seq);
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
@@ -221,17 +222,21 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     }
 
     // ajeitar ultimo pacote
-    int i;
-    for(i = 0; i < NTENTATIVAS; i++)
-        if(envia_msg(socket, this_seq, FIM, NULL, 0))
-            break;
-    if(i == NTENTATIVAS){
-        printf("nao foi possivel enviar_msg() FIM, perda de conexao, return\n");
-        free(data);
+    if(!envia_msg(socket, this_seq, FIM, NULL, 0)){
+        printf("nao foi possivel enviar_msg() FIM\n");
         return false;
     }
+    // int i;
+    // for(i = 0; i < NTENTATIVAS; i++)
+    //     if(envia_msg(socket, this_seq, FIM, NULL, 0))
+    //         break;
+    // if(i == NTENTATIVAS){
+    //     printf("nao foi possivel enviar_msg() FIM, perda de conexao, return\n");
+    //     free(data);
+    //     return false;
+    // }
         
-    next(this_seq);
+    // next(this_seq);
     free(data);
     blocks++;
     printf("finished chunking (%d) blocks, leu (%d) bytes\n", blocks, leu_bytes);
@@ -349,8 +354,9 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
         return false;
     }
 
-    // printf("sent (%d) bytes\n", bytes);
-    // read_packet(packet);
+    next(this_seq);
+    printf("SENT (%d) BYTES\n", bytes);
+    read_packet(packet);
     free(packet);
     return true;
 }
