@@ -204,24 +204,31 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     }
 
     // ARQUIVO CABE //
-    resposta_cli = make_packet(sequencia(), OK, NULL, 0);
-    if(!resposta_cli){  // se pacote deu errado
-        printf("falha ao criar pacote de resposta do get (cliente), terminando\n");
-        return false;   
-    } 
+    if(!envia_msg(soquete, &client_seq, OK, NULL, 0)){
+        printf("nao foi possivel responder ok para o servidor\n");
+        return false;
+    }
+    // resposta_cli = make_packet(sequencia(), OK, NULL, 0);
+    // if(!resposta_cli){  // se pacote deu errado
+    //     printf("falha ao criar pacote de resposta do get (cliente), terminando\n");
+    //     return false;   
+    // } 
 
-    bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
-    if(bytes<0)                                             // pega erros, se algum
-        printf("falha ao enviar pacote de resposta do get (cliente), erro: %s\n", strerror(errno));         // print detalhes do erro
-    free(resposta_cli);
+    // bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
+    // if(bytes<0)                                             // pega erros, se algum
+    //     printf("falha ao enviar pacote de resposta do get (cliente), erro: %s\n", strerror(errno));         // print detalhes do erro
+    // free(resposta_cli);
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve))
+    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve)){
         printf("arquivo (%s) transferido com sucesso!\n", file);
-    else
-        printf("nao foi possivel transferir o arquivo (%s)\n", file);
+        return true;
+    }
 
-    return true;
+    printf("nao foi possivel transferir o arquivo (%s)\n", file);
+    // moven(&nxts_serve, -1);
+    // next(&nxts_serve);
+    return false;
 }
 
 
