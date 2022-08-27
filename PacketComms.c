@@ -484,11 +484,11 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // COLOCA MASCARA
-    len_byte = sizeof(unsigned int);
-    unsigned int mask[TAM_PACOTE];
-    memset(mask, 255, len_byte*TAM_PACOTE); // mascarar com 0, 1, 170, 85, 255, nao funciona
+    len_byte = sizeof(unsigned long);
+    unsigned long mask[TAM_PACOTE];
+    memset(mask, -1, len_byte*TAM_PACOTE); // mascarar com 0, 1, 170, 85, 255, nao funciona
     for(int i = 0; i < TAM_PACOTE; i++)
-        mask[i] = (unsigned int) packet[i];
+        mask[i] = (unsigned long) packet[i];
     
     // ENVIA MASCARA
     for(i = 0; i < len_byte*NTENTATIVAS; i++){
@@ -505,7 +505,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // MASCARA FOI ENVIADA
-    printf("SENT (%d) BYTES\n", bytes);
+    printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
     read_packet(packet);
     next(this_seq);
     free(packet);
@@ -517,10 +517,10 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned int buffer[TAM_PACOTE];
+    unsigned long buffer[TAM_PACOTE];
     int bytes, len_byte, i;
 
-    len_byte = sizeof(unsigned int);
+    len_byte = sizeof(unsigned long);
 
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
