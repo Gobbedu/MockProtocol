@@ -330,7 +330,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 }
 
 // envia uma mensagem para o socket, com verificacao de send() bytes > 0
-// retorna true se enviou com sucesso, e falso c.c., NAO ATUALIZA SEQUENCIA
+// retorna true se enviou com sucesso, e falso c.c., ATUALIZA SEQUENCIA
 // tenta enviar mensagem NTENTATIVAS vezes
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
 {

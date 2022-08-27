@@ -81,13 +81,20 @@ int main()
 
     while(1){
         // pacote = recebe(soquete, &serv_seq, &nxts_cli);
-         pacote = recebe_msg(soquete);
+        pacote = recebe_msg(soquete);
         if(!pacote) 
             continue;
-        if(!check_sequence(pacote, nxts_cli))
+        if(!check_sequence(pacote, nxts_cli)){
+            printf("servidor esperava SEQUENCIA (%d) mas recebeu (%d)\n",
+            nxts_cli, get_packet_sequence(pacote));
+            free(pacote);
             continue;
-        if(!check_parity(pacote))
+        }
+        if(!check_parity(pacote)){
+            printf("servidor recebeu mensagem com ERRO NA PARIDADE\n");
+            free(pacote);
             continue;
+        }
         next(&nxts_cli);
 /*
         if(get_packet_type(pacote) != CD){
@@ -163,8 +170,8 @@ void server_switch(unsigned char* buffer)
 
 
 void cdc(unsigned char* buffer){
-    int resultado, bytes, ret;
-    unsigned char *resposta;
+    int resultado, ret;
+    // unsigned char *resposta;
     unsigned char *cd, flag[1];
     cd = get_packet_data(buffer);
     unsigned char *d = calloc(strcspn((char*)cd, " "), sizeof(unsigned char));    // remove espaco no final da mensagem, se tem espaco da ruim 
@@ -193,14 +200,17 @@ void cdc(unsigned char* buffer){
     else{
         resultado = OK;
     }
-    resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);
-    if(!resposta) return;   // se pacote deu errado
+    // respota = recebe_msg(soquete);
+    if(!envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO))
+        return;     // nao foi possivel enviar o pacote
+    // resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);
+    // if(!resposta) return;   // se pacote deu errado
 
-    bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
-    if(bytes<0)                                                     // pega erros, se algum
-        printf("error: %s\n", strerror(errno));                     // print detalhes do erro
+    // bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
+    // if(bytes<0)                                                     // pega erros, se algum
+    //     printf("error: %s\n", strerror(errno));                     // print detalhes do erro
 
-    free(resposta);
+    // free(resposta);
     free(cd);
     free(d);
 }
@@ -209,8 +219,8 @@ void cdc(unsigned char* buffer){
 // Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
 void mkdirc(unsigned char* buffer){
-    int bytes, ret, resultado;
-    unsigned char *resposta;
+    int ret, resultado;
+    // unsigned char *resposta;
     unsigned char *mkdir, flag[1];
 
     mkdir = get_packet_data(buffer);
@@ -234,23 +244,24 @@ void mkdirc(unsigned char* buffer){
     else{
         resultado = OK;
     }
+    if(!envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO))
+        return;     // nao foi possivel enviar o pacote
+    // resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);    // mostra flag somente se tem erro, bytes_dados = 1
+    // if(!resposta) return;   // se pacote deu errado
 
-    resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);    // mostra flag somente se tem erro, bytes_dados = 1
-    if(!resposta) return;   // se pacote deu errado
+    // bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
+    // if(bytes<0)                                         // pega erros, se algum
+    //     printf("error: %s\n", strerror(errno));         // print detalhes do erro
 
-    bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
-    if(bytes<0)                                         // pega erros, se algum
-        printf("error: %s\n", strerror(errno));         // print detalhes do erro
-
-    free(resposta);
+    // free(resposta);
     free(mkdir);
 }
 
 void get(unsigned char *buffer){
     // int bytes, resultado;
-    int bytes;
     // char*resposta_srv, *resposta_cli;
-    unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
+    // unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
+    unsigned char *resposta;
     unsigned char *get, *mem, flag;
 
     get = get_packet_data(buffer);  // arquivo a abrir
@@ -274,16 +285,18 @@ void get(unsigned char *buffer){
         };
         printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag);
 
-        resposta_srv = make_packet(sequencia(), ERRO, &flag, 1);
-        if(!resposta_srv){  // se pacote deu errado
-            printf("falha ao criar pacote de resposta do get (servidor), terminando\n");
-            return;   
-        } 
+        if(!envia_msg(soquete, &serv_seq, ERRO, &flag, 1))
+            printf("get nao respondeu erro para cliente\n");
+        // resposta_srv = make_packet(sequencia(), ERRO, &flag, 1);
+        // if(!resposta_srv){  // se pacote deu errado
+        //     printf("falha ao criar pacote de resposta do get (servidor), terminando\n");
+        //     return;   
+        // } 
 
-        bytes = send(soquete, resposta_srv, TAM_PACOTE, 0);     // envia packet para o socket
-        if(bytes<0)                                             // pega erros, se algum
-            printf("falha ao enviar pacote de resposta do get (servidor), erro: %s\n", strerror(errno));         // print detalhes do erro
-        free(resposta_srv);
+        // bytes = send(soquete, resposta_srv, TAM_PACOTE, 0);     // envia packet para o socket
+        // if(bytes<0)                                             // pega erros, se algum
+        //     printf("falha ao enviar pacote de resposta do get (servidor), erro: %s\n", strerror(errno));         // print detalhes do erro
+        // free(resposta_srv);
         return;         
         // fim da funcao get, se ERRO
     }
@@ -293,32 +306,42 @@ void get(unsigned char *buffer){
     mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
     sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
 
-    resposta_srv = make_packet(sequencia(), DESC_ARQ, mem, 16); // string de 16 digitos em bytes
-    free(mem);
-    if(!resposta_srv){  // se pacote deu errado
-        printf("falha ao criar pacote de resposta do get, terminando\n");
-        return;   
-    }  
-    
-    send(soquete, resposta_srv, TAM_PACOTE, 0);
-    bytes = recv(soquete, resposta_cli, TAM_PACOTE, 0);
-    if(bytes<0){
-        printf("nao recebeu pacote de resposta do cliente (OK;ERRO;NACK), terminando\n");
+    if(!envia_msg(soquete, &serv_seq, DESC_ARQ, mem, 16))
+        printf("NAO FOI POSSVIEL ENVIAR DESC_ARQ PARA CLIENTE\n");
+    // resposta_srv = make_packet(sequencia(), DESC_ARQ, mem, 16); // string de 16 digitos em bytes
+    // free(mem);
+    // if(!resposta_srv){  // se pacote deu errado
+    //     printf("falha ao criar pacote de resposta do get, terminando\n");
+    //     return;   
+    // }  
+    resposta = recebe_msg(soquete);
+    if(!resposta){
+        printf("NAO RECEBEU RESPOSTA (OK;ERRO;NACK) DO CLIENTE\n");
         return;
     }
-    read_packet(resposta_cli);
-    nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
-
+    // send(soquete, resposta_srv, TAM_PACOTE, 0);
+    // bytes = recv(soquete, resposta_cli, TAM_PACOTE, 0);
+    // if(bytes<0){
+    //     printf("nao recebeu pacote de resposta do cliente (OK;ERRO;NACK), terminando\n");
+    //     return;
+    // }
+    // read_packet(resposta_cli);
+    // nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
+    next(&nxts_cli);
+    read_packet(resposta);
     // define comportamento com base na resposta do cliente
-    switch (get_packet_type(resposta_cli))
+    switch (get_packet_type(resposta))
     {
     case ERRO:                  // arquivo nao cabe
         // free(resposta_cli);     
-        free(resposta_srv);
+        // free(resposta_srv);
         return;                 // termina funcao get
     
     case OK:                    // envia arquivo
-        envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli);
+        if(envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli))
+            printf("arquivo transferido com sucesso\n");
+        else
+            printf("nao foi possivel tranferiri arquivo\n");
         return;
     }
 
