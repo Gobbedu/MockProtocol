@@ -245,7 +245,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
             continue;
         }   tentativas = 0;
        
-        read_packet(resposta);
+        // read_packet(resposta);
 
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
             printf("recebe_mgs() em envia sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
@@ -331,7 +331,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
             try++;
             continue;
         }   try = 0;
-        read_packet(pacote);
+        // read_packet(pacote);
 
         // FIM //
         if(get_packet_type(pacote) == FIM){
