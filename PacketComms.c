@@ -11,108 +11,6 @@
 #define NTENTATIVAS 3 // numero de vezes que vai tentar ler/enviar um pacote
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
 
-/* envia UM pacote com dados especificados e espera UMA resposta,
- * tenta NTENTATIVAS vezes as operacoes envolvidas
- * retorna NULL se perde conexao ou retorna o pacote se recebe resposta esperada
- * atualiza send_seq e recv_seq se deu certo, retorno deve receber free()
- */ 
-unsigned char*envia(int soquete,unsigned char * packet, unsigned int *expected_seq)
-{
-    int bytes, timeout, lost_conn, resend;
-    // char resposta[TAM_PACOTE];
-    unsigned char *resposta;
-    unsigned char* data;
-
-    // exit if recebe 3 timeouts da funcao
-    timeout = lost_conn = 0;
-    while(lost_conn<3){ 
-        resend = 0;
-
-        // printf("sending packet:\n");
-        // read_packet(packet);
-        // printf("\n");
-        int len_byte = sizeof(unsigned short int);
-        unsigned short int mask[TAM_PACOTE];
-        memset(mask, 0, len_byte*TAM_PACOTE);
-        for(int i = 0; i < TAM_PACOTE; i++)
-            mask[i] = (unsigned short int) packet[i];
-
-        bytes = send(soquete, mask, len_byte*TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes < 0){                                      // pega erros, se algum
-            perror("ERROR envia pacote em envia()");
-        }
-
-        // said do loop soh se server responde nack, (ok e erro retorna da funcao)
-        timeout = 0;
-        while(!resend)
-        {   
-            if(timeout == 3){   // recv deu timeout 3 vezes, timeout da funcao
-                lost_conn++;
-                break;
-            }
-
-            resposta = recebe_msg(soquete);
-            if(!resposta){
-                lost_conn++;
-                break;
-            }
-
-            if (!check_sequence(resposta, *expected_seq)){              // sequencia incorreta
-                printf("client expected %d but got %d as a sequence\n", *expected_seq, get_packet_sequence(resposta));
-                continue;
-            }
-
-            // SE NACK, REENVIA //
-            // precisa checar paridade, servidor responde dnv (???????????) nao sei
-            // Paridade diferente: NACK 
-            // mensagem recebida mas nao compreendida, reenviar
-            if (!check_parity (resposta)){             
-                data = get_packet_data(resposta);
-                printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-
-                lost_conn = timeout = 0;
-                resend = true;
-                free(data);
-                break;  // exit response loop & re-send 
-            }
-
-            // SE VERIFICADO & !NACK //
-            // devolve resposta //
-            // printf("pacote enviado recebeu resposta!\n");
-            unsigned char*pacote = calloc(TAM_PACOTE, sizeof(char ));
-            // read_packet(resposta);
-            memcpy(pacote, resposta, TAM_PACOTE);
-            *expected_seq = ((*expected_seq)+1)%MAX_SEQUENCE;
-            return pacote;
-        }
-    }
-
-    printf("Erro de comunicacao, servidor nao responde :(\n");
-    return NULL;
-}
-
-// recebe UM pacote, bloqueante (?) 
-// retorna NULL se nn recebeu nada ou aloca um pacote se recebe pacote esperado
-// pacote recebido deve ser liberado da memoria, free(pacote recebido)
-char*recebe(int soquete, unsigned int *this_seq, unsigned int *expected_seq)
-{
-    int bytes;
-    // char *seq;
-    // unsigned char *resposta;
-    unsigned char buffer[TAM_PACOTE];
-    bytes = recv(soquete, buffer, TAM_PACOTE, 0);       // recebe dados do socket
-
-    // VERIFICA //
-    if (bytes<=0) return NULL;                 // se erro ou vazio, ignora
-    if (!is_our_packet(buffer)) return NULL;   // se nao eh nosso pacote, ignora
-
-    // VERIFICA & !NACK, devolve pacote
-    char*pacote = calloc(TAM_PACOTE, sizeof(char ));
-    memcpy(pacote, buffer, TAM_PACOTE);
-    
-    *(expected_seq) = ((*expected_seq)+1)%MAX_SEQUENCE;
-    return pacote;
-}
 
 /* envia UM pacote com dados especificados e espera UMA resposta,
  * tenta NTENTATIVAS vezes as operacoes envolvidas
@@ -408,15 +306,15 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
         mask[i] = (unsigned long) packet[i];
     
     // ENVIA MASCARA
-    for(i = 0; i < NTENTATIVAS; i++){
+    // for(i = 0; i < NTENTATIVAS; i++){
         bytes = send(socket, mask, len_byte*TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes == len_byte*TAM_PACOTE)
-            break;
-        usleep(0);
-    }
+        if(bytes != len_byte*TAM_PACOTE){
+    //         break;
+    //     usleep(0);
+    // }
 
     // NAO ENVIOU MASCARA
-    if(i == NTENTATIVAS){
+    // if(i == NTENTATIVAS){
         fprintf(stderr, "NAO FOI POSSIVEL ENVIAR MASCARA\n");
         free(packet);
         return false;

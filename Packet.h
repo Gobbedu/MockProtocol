@@ -81,7 +81,6 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 int envia_sequencial (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
 
 unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados);
-unsigned char *envia(int soquete,unsigned char * packet, unsigned int *expected_seq);
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes);
 unsigned char *recebe_msg(int socket);
 

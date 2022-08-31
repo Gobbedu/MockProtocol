@@ -122,9 +122,8 @@ void client_switch(char* comando){
 // talvez precise refatorar mais tarde (put & ls tb usam tipo desc_arq)
 int response_GET(unsigned char * resposta_srv, unsigned char *file){
     // int bytes, resultado, mem_livre;
-    int mem_livre;
+    long mem_livre, tamanho = 0;
     char pwd[PATH_MAX];
-    int tamanho = 0;
     unsigned char* dado;
     
     dado = get_packet_data(resposta_srv);

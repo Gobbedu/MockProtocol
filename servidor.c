@@ -53,7 +53,6 @@ int main()
         }
         next(&nxts_cli);
 
-        read_packet(pacote);
         server_switch(pacote);
         free(pacote);
     }
