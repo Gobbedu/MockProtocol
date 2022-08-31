@@ -15,7 +15,8 @@ int main(){
     char comando[COMMAND_BUFF];
 
     // soquete = ConexaoRawSocket("lo");            // abre o socket -> lo vira ifconfig to pc que manda
-    soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("eno1");
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -121,8 +122,7 @@ void client_switch(char* comando){
 // talvez precise refatorar mais tarde (put & ls tb usam tipo desc_arq)
 int response_GET(unsigned char * resposta_srv, unsigned char *file){
     // int bytes, resultado, mem_livre;
-    unsigned char*resposta_cli;
-    int bytes, mem_livre;
+    int mem_livre;
     char pwd[PATH_MAX];
     int tamanho = 0;
     unsigned char* dado;
@@ -147,11 +147,13 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
         printf("Espaço insuficiente!\n");
-        resposta_cli = make_packet(sequencia(), ERRO, &sem_espaco, 1);
-        bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
-        if(bytes<0)                                             // pega erros, se algum
-            printf("falha ao enviar pacote de resposta do get, erro: %s\n", strerror(errno));         // print detalhes do erro
-        free(resposta_cli);
+        if(!envia_msg(soquete, &client_seq, ERRO, NULL, 0))
+            printf("Não foi possivel responder o erro!\n");
+        // resposta_cli = make_packet(sequencia(), ERRO, &sem_espaco, 1);
+        // bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
+        // if(bytes<0)                                             // pega erros, se algum
+        //     printf("falha ao enviar pacote de resposta do get, erro: %s\n", strerror(errno));         // print detalhes do erro
+        // free(resposta_cli);
         return false;
     }
 

@@ -408,10 +408,11 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
         mask[i] = (unsigned long) packet[i];
     
     // ENVIA MASCARA
-    for(i = 0; i < len_byte*NTENTATIVAS; i++){
+    for(i = 0; i < NTENTATIVAS; i++){
         bytes = send(socket, mask, len_byte*TAM_PACOTE, 0);       // envia packet para o socket
         if(bytes == len_byte*TAM_PACOTE)
             break;
+        usleep(0);
     }
 
     // NAO ENVIOU MASCARA
@@ -447,6 +448,7 @@ unsigned char *recebe_msg(int socket)
         if(bytes > 0)
             if (is_our_mask(buffer))                                // e eh nosso pacote
                 break;
+        usleep(0);
     }
 
     // nao recebeu pacote valido
