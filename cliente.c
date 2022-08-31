@@ -136,12 +136,12 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     char *bashrm = "rm /tmp/tamanho_gb.txt";
     system(bashdf);
     FILE *memfree = fopen("/tmp/tamanho_gb.txt", "r");
-    fscanf(memfree, "%d", &mem_livre);
+    fscanf(memfree, "%ld", &mem_livre);
     fclose(memfree);
     system(bashrm);
 
     // caso o tamanho do arquivo seja maior que espaço livre
-    printf("\nmeu pc tem %d bytes de memoria livre \n",mem_livre);
+    printf("\nmeu pc tem %ld bytes de memoria livre \n",mem_livre);
 
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
