@@ -69,16 +69,6 @@ unsigned char * make_packet(unsigned int sequencia, int tipo, unsigned char* dad
     return packet;
 }
 
-/*
-int free_packet(char * packet)
-{   
-    if(!packet) // if packet nn existe (NULL)
-        return 0;
-
-    free(packet);
-    return 1;
-}
-*/
 /* =========================== FUNCOES AUXILIARES =========================== */
 
 // printa o header + data + paridade do pacote

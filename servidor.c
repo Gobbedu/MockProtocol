@@ -23,10 +23,6 @@ unsigned int nxts_cli = 0;   // expected next client sequence
 /* sniff sniff */
 int main()
 {
-    // int bytes;
-    // int check;
-    // char*resposta, buffer[TAM_PACOTE];       // mensagem de tamanho constante
-    // charbuffer[TAM_PACOTE];
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
@@ -38,46 +34,6 @@ int main()
     tv.tv_usec = 0;
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
-
-/*
-    int bytes;
-    // unsigned char *dado1 = calloc(TAM_PACOTE, sizeof(unsigned char));
-    // unsigned char *dado2 = calloc(TAM_PACOTE, sizeof(unsigned char));
-    unsigned char dado1[TAM_PACOTE];
-    memset(dado1, 0, TAM_PACOTE);
-    unsigned char dado2[TAM_PACOTE];
-    memset(dado2, 0, TAM_PACOTE);
-
-    unsigned char * recebeu = recebe_msg(soquete);
-    if(recebeu)
-        envia_msg(soquete, &serv_seq, ACK, recebeu+TAM_HEADER, MAX_DADOS);
-
-//  funciona
-    int len_dado = 63;
-    bytes = recv(soquete, dado1, len_dado, 0);
-    if(bytes > 0) print_bytes("recebeu dado cru:", dado1, bytes);
-    else perror("deu erro:");
-
-    bytes = recv(soquete, dado2, len_dado, 0);
-    if(bytes > 0) print_bytes("recebeu dado cru:", dado2, bytes);
-    else perror("deu erro:");
-
-// da problema, some 4 bytes 
-    printf("\n========= recebeu pacote com dados\n");
-    bytes = recv(soquete, dado1, TAM_PACOTE, 0);
-    if(bytes > 0)  read_packet(dado1);
-    else perror("deu erro:");
-
-    sleep(1);printf("\n");
-
-    bytes = recv(soquete, dado2, TAM_PACOTE, 0);
-    if(bytes > 0)  read_packet(dado2);
-    else perror("deu erro:");
-
-    // free(dado1);
-    // free(dado2);
-*/
-
 
     while(1){
         // pacote = recebe(soquete, &serv_seq, &nxts_cli);
@@ -96,18 +52,7 @@ int main()
             continue;
         }
         next(&nxts_cli);
-/*
-        if(get_packet_type(pacote) != CD){
-            while(recv(soquete, buffer, TAM_PACOTE, MSG_PEEK) == 67){
-                recv(soquete, buffer, TAM_PACOTE, 0);
-                nxts_cli++;
-                printf("DISCARTED:\n");
-                read_packet(buffer);
-            }
-            send(soquete, make_packet(sequencia(), NACK, "3", 1), TAM_PACOTE, 0);
-            continue;
-        }
-*/
+
         read_packet(pacote);
         server_switch(pacote);
         free(pacote);
@@ -123,15 +68,6 @@ void server_switch(unsigned char* buffer)
 
 	switch (tipo_lido)
 	{
-        case OK:
-            // funcao q redireciona
-            break;
-        case NACK:
-            // funcao q redireciona
-            break;
-        case ACK:
-            // funcao q redireciona
-            break;
         case CD:
             cdc(buffer);
             break;
@@ -147,22 +83,6 @@ void server_switch(unsigned char* buffer)
         case PUT:
             // funcao q redireciona
             break;
-        case ERRO:
-            // funcao q redireciona
-            break;
-        case DESC_ARQ:
-            // funcao q redireciona
-            break;
-        case DADOS:
-            // funcao q redireciona
-            break;
-        case FIM:
-            // funcao q redireciona
-            break;
-        case SHOW_NA_TELA:
-            // funcao q redireciona
-            break;
-
 		default:
 			break;
 	}
@@ -203,20 +123,10 @@ void cdc(unsigned char* buffer){
     // respota = recebe_msg(soquete);
     if(!envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO))
         return;     // nao foi possivel enviar o pacote
-    // resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);
-    // if(!resposta) return;   // se pacote deu errado
 
-    // bytes = send(soquete, resposta, TAM_PACOTE, 0);                 // envia packet para o socket
-    // if(bytes<0)                                                     // pega erros, se algum
-    //     printf("error: %s\n", strerror(errno));                     // print detalhes do erro
-
-    // free(resposta);
     free(cd);
     free(d);
 }
-
-// trata_tipos: case switch p/ cada ENUM uma funcao
-// Tipo == ls -> funcao_ls(dados){ dados = a ou l ... } .... 
 
 void mkdirc(unsigned char* buffer){
     int ret, resultado;
@@ -246,21 +156,11 @@ void mkdirc(unsigned char* buffer){
     }
     if(!envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO))
         return;     // nao foi possivel enviar o pacote
-    // resposta = make_packet(sequencia(), resultado, flag, resultado == ERRO);    // mostra flag somente se tem erro, bytes_dados = 1
-    // if(!resposta) return;   // se pacote deu errado
 
-    // bytes = send(soquete, resposta, TAM_PACOTE, 0);     // envia packet para o socket
-    // if(bytes<0)                                         // pega erros, se algum
-    //     printf("error: %s\n", strerror(errno));         // print detalhes do erro
-
-    // free(resposta);
     free(mkdir);
 }
 
 void get(unsigned char *buffer){
-    // int bytes, resultado;
-    // char*resposta_srv, *resposta_cli;
-    // unsigned char *resposta_srv, resposta_cli[TAM_PACOTE];
     unsigned char *resposta;
     unsigned char *get, *mem, flag;
 
@@ -287,16 +187,7 @@ void get(unsigned char *buffer){
 
         if(!envia_msg(soquete, &serv_seq, ERRO, &flag, 1))
             printf("get nao respondeu erro para cliente\n");
-        // resposta_srv = make_packet(sequencia(), ERRO, &flag, 1);
-        // if(!resposta_srv){  // se pacote deu errado
-        //     printf("falha ao criar pacote de resposta do get (servidor), terminando\n");
-        //     return;   
-        // } 
 
-        // bytes = send(soquete, resposta_srv, TAM_PACOTE, 0);     // envia packet para o socket
-        // if(bytes<0)                                             // pega erros, se algum
-        //     printf("falha ao enviar pacote de resposta do get (servidor), erro: %s\n", strerror(errno));         // print detalhes do erro
-        // free(resposta_srv);
         return;         
         // fim da funcao get, se ERRO
     }
@@ -308,33 +199,19 @@ void get(unsigned char *buffer){
 
     if(!envia_msg(soquete, &serv_seq, DESC_ARQ, mem, 16))
         printf("NAO FOI POSSVIEL ENVIAR DESC_ARQ PARA CLIENTE\n");
-    // resposta_srv = make_packet(sequencia(), DESC_ARQ, mem, 16); // string de 16 digitos em bytes
-    // free(mem);
-    // if(!resposta_srv){  // se pacote deu errado
-    //     printf("falha ao criar pacote de resposta do get, terminando\n");
-    //     return;   
-    // }  
+
     resposta = recebe_msg(soquete);
     if(!resposta){
         printf("NAO RECEBEU RESPOSTA (OK;ERRO;NACK) DO CLIENTE\n");
         return;
     }
-    // send(soquete, resposta_srv, TAM_PACOTE, 0);
-    // bytes = recv(soquete, resposta_cli, TAM_PACOTE, 0);
-    // if(bytes<0){
-    //     printf("nao recebeu pacote de resposta do cliente (OK;ERRO;NACK), terminando\n");
-    //     return;
-    // }
-    // read_packet(resposta_cli);
-    // nxts_cli = (nxts_cli+1)%MAX_SEQUENCE;
+ 
     next(&nxts_cli);
     read_packet(resposta);
     // define comportamento com base na resposta do cliente
     switch (get_packet_type(resposta))
     {
     case ERRO:                  // arquivo nao cabe
-        // free(resposta_cli);     
-        // free(resposta_srv);
         return;                 // termina funcao get
     
     case OK:                    // envia arquivo

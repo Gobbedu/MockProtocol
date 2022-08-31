@@ -23,54 +23,6 @@ int main(){
     setsockopt(soquete, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     setsockopt(soquete, SOL_SOCKET, SO_SNDTIMEO, (const char*)&tv, sizeof tv);
 
-   /* char buffer[TAM_PACOTE];
-    char*buff;
-    send(soquete, make_packet(sequencia(), MKDIR, "1o mkdir", 8), TAM_PACOTE, 0);
-    send(soquete, make_packet(sequencia(), MKDIR, "2o mkdir", 8), TAM_PACOTE, 0);
-    send(soquete, make_packet(sequencia(), MKDIR, "3o mkdir", 8), TAM_PACOTE, 0);
-    send(soquete, make_packet(sequencia(), MKDIR, "4o mkdir", 8), TAM_PACOTE, 0);
-    sleep(1);
-    recv(soquete, buffer, TAM_PACOTE, 0);
-    // buff = recebe(soquete, &client_seq, &nxts_serve);
-    perror("ERRO ");
-    read_packet(buffer);
-    send(soquete, make_packet(sequencia(), CD,    "emfim cd", 8), TAM_PACOTE, 0);
-
-    int bytes;
-    int len_dado = 63;
-    unsigned char ok[63] = {-43,86,78,91,64,56,32,-127,-103,33,4,81,76,67,-34,110,38,97,41,75,-23,-9,32,119,-24,69,42,-70,76,-60,-100,105,26,-45,48,78,-127,-68,84,-99,75,-77,32,13,49,-20,10,69,-34,-125,107,102,70,12,39,-69,-51,-86,96,71,-6,64,66};
-    unsigned char no[63] = {48, 102,78,25,-124,-111,49,-120,0,-127,0,80,82,114,8,52,4,-60,-108,-14,56,12,64,-79,-52,-117,87,39,-90,60,100,98,10,91,83,80,110,-43,93,67,-63,-101,-125,25,2,-12,-54,-99,-101,-85,87,69,101,102,-92,62,-27,-100,-104,-13,48,-90,82};
-
-    unsigned char *bruh = "segfault my ass bitch";
-    unsigned char *resposta = envia_recebe(soquete, &client_seq, &nxts_serve, no, DADOS, len_dado);
-    if(resposta) read_packet(resposta);
-
-// funciona 
-    // send
-    bytes = send(soquete, (void*) ok, len_dado, 0);
-    if(bytes > 0) print_bytes("enviou dado cru:", ok, bytes);
-    else perror("erro send():");
-    // send
-    bytes = send(soquete, (void*) no, len_dado, 0);
-    if(bytes > 0) print_bytes("enviou dado cru:", no, bytes);
-    else perror("erro send():");
-
-
-// envia ok 
-    printf("\n========= enviou o pacote com dados\n");
-    unsigned char *pacote1 = make_packet(14, DADOS, ok, len_dado);
-    bytes = send(soquete, pacote1, TAM_PACOTE, 0);
-    if(bytes  > 0)  read_packet(pacote1);
-
-    sleep(1);printf("\n");
-    
-    unsigned char *pacote2 = make_packet(15, DADOS, no, len_dado);
-    bytes = send(soquete, pacote2, TAM_PACOTE, 0);
-    if( bytes > 0)  read_packet(pacote2);
-    free(pacote1);free(pacote2);    
-*/
-
-
     while(1){
         if(getcwd(pwd, sizeof(pwd)))    // se pegou pwd, (!NULL)
             printf(GREEN "limbo@anywhere" RESET ":" BLUE "%s" RESET "$ ", pwd);
@@ -208,16 +160,6 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
         printf("nao foi possivel responder ok para o servidor\n");
         return false;
     }
-    // resposta_cli = make_packet(sequencia(), OK, NULL, 0);
-    // if(!resposta_cli){  // se pacote deu errado
-    //     printf("falha ao criar pacote de resposta do get (cliente), terminando\n");
-    //     return false;   
-    // } 
-
-    // bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
-    // if(bytes<0)                                             // pega erros, se algum
-    //     printf("falha ao enviar pacote de resposta do get (cliente), erro: %s\n", strerror(errno));         // print detalhes do erro
-    // free(resposta_cli);
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
     if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve)){
@@ -245,12 +187,7 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
     unsigned char *data;
 
     // /* cria pacote com parametro para cd no server */
-    // unsigned char*packet = make_packet(sequencia(), tipo, parametro, strlen((char*)parametro));
-    // if(!packet)
-    //     fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
-
     // envia pacote pro servidor e aguarda uma resposta
-    // resposta = envia(soquete, packet, &nxts_serve); // se enviou atualiza sequencia nxts_serve
     resposta = envia_recebe(soquete, &client_seq, &nxts_serve, parametro, tipo, strlen((char*)parametro));
     if(!resposta) return false;
 
