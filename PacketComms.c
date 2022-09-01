@@ -38,12 +38,14 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             resposta = recebe_msg(soquete);
             if(!resposta){
                 lost_conn++;
+                moven(send_seq, -1);
                 break;
             }
 
             if (!check_sequence(resposta, *recv_seq)){              // sequencia incorreta
                 printf("envia_recebe esperava recv_seq com %d mas recebeu %d\n", *recv_seq, get_packet_sequence(resposta));
                 free(resposta);
+                moven(send_seq, -1);
                 break;
             }
 
@@ -54,6 +56,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             if (!check_parity (resposta)){             
                 printf("resposta: (%s) ; mensagem: (%.*s)\n", get_type_packet(resposta), get_packet_tamanho(resposta), resposta+TAM_HEADER);
                 free(resposta);
+                moven(send_seq, -1);
                 break;  // exit response loop & re-send 
             }
             lost_conn = 0;
