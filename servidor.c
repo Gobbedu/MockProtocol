@@ -24,9 +24,9 @@ unsigned int nxts_cli = 0;   // expected next client sequence
 int main()
 {
     unsigned char *pacote;
-    // soquete = ConexaoRawSocket("lo");
+    soquete = ConexaoRawSocket("lo");
     // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
-    soquete = ConexaoRawSocket("enp1s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    // soquete = ConexaoRawSocket("enp1s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("eno1");
     // soquete = ConexaoRawSocket("enp3s0");
 

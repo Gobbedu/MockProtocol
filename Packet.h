@@ -85,11 +85,6 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes);
 unsigned char *recebe_msg(int socket);
 
-unsigned int moven(unsigned int *sequence, int n);
-unsigned int next(unsigned int *sequence);
-unsigned char *ptoa(unsigned char *pacote);
-unsigned char *itoa(int sequencia);
-
 /* ================ packet functions ================ */
 unsigned char *make_packet(unsigned int sequencia, int tipo, unsigned char* dados, int bytes_dados);
 int check_sequence(unsigned char *buffer, int expected_seq);
@@ -112,6 +107,13 @@ void read_packet(unsigned char *buffer);
 int is_our_packet(unsigned char *buffer);
 int is_our_mask(unsigned short *buffer);
 int is_valid_type(int tipo);
+
+unsigned int peekn(unsigned int sequence, int n);
+unsigned int moven(unsigned int *sequence, int n);
+unsigned int next(unsigned int *sequence);
+unsigned char *ptoa(unsigned char *pacote);
+unsigned char *itoa(int sequencia);
+
 void print_bytes(char *nome,unsigned char *buf, int n);
 
 #endif

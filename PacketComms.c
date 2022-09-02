@@ -19,11 +19,11 @@
  */ 
 unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados)
 {
-    int lost_conn;
+    int lost_conn, try;
     unsigned char *resposta;
 
     // exit if recebe 3 timeouts da funcao
-    lost_conn = 0;
+    try = lost_conn = 0;
     while(lost_conn<NTENTATIVAS){ 
 
         if(!envia_msg(soquete, send_seq, tipo, dados, bytes_dados)){
@@ -32,17 +32,21 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
         }
 
         // said do loop soh se server responde nack, (ok e erro retorna da funcao)
-        while(1)
+        while(try<NTENTATIVAS)
         {   
 
             resposta = recebe_msg(soquete);
-            if(!resposta)
-                break;
+            if(!resposta){
+                fprintf(stderr, "timeo envia_recebe no recebe_msg()\n");
+                try++;
+                continue;
+            }
 
             if (!check_sequence(resposta, *recv_seq)){              // sequencia incorreta
                 printf("envia_recebe esperava recv_seq com %d mas recebeu %d\n", *recv_seq, get_packet_sequence(resposta));
                 free(resposta);
-                break;
+                try++;
+                continue;
             }
 
             // SE NACK, REENVIA //
@@ -52,7 +56,8 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             if (!check_parity (resposta)){             
                 printf("resposta: (%s) ; mensagem: (%.*s)\n", get_type_packet(resposta), get_packet_tamanho(resposta), resposta+TAM_HEADER);
                 free(resposta);
-                break;  // exit response loop & re-send 
+                try++;
+                continue;  // exit response loop & re-send 
             }
             lost_conn = 0;
 
@@ -359,8 +364,8 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // MASCARA FOI ENVIADA
-    // printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
-    // read_packet(packet);
+    printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
+    read_packet(packet);
     next(this_seq);
     free(packet);
     return true;
@@ -377,8 +382,8 @@ unsigned char *recebe_msg(int socket)
     len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    // for(i = 0; i < NTENTATIVAS;){
-    while (1) {
+    for(i = 0; i < NTENTATIVAS;){
+    // while (1) {
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
         if(bytes == len_byte*TAM_PACOTE){       // recebeu tamanho do pacote  
@@ -402,8 +407,8 @@ unsigned char *recebe_msg(int socket)
     for(int j = 0; j < TAM_PACOTE; j++)
         pacote[j] = (unsigned char) buffer[j];
         
-    // printf("RECEBEU (%d) BYTES\n", bytes);
-    // read_packet(pacote);
+    printf("RECEBEU (%d) BYTES\n", bytes);
+    read_packet(pacote);
 
     // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
@@ -413,6 +418,13 @@ unsigned char *recebe_msg(int socket)
 unsigned int next(unsigned int *sequence){
     *sequence = ((*sequence)+1)%MAX_SEQUENCE;
     return *sequence;
+}
+
+// funciona para n em [-MAX_SEQUENCE, +inf)
+// retorna sequencia movida n posicoes SEM alterar
+unsigned int peekn(unsigned int sequence, int n)
+{
+    return (sequence+MAX_SEQUENCE+n)%MAX_SEQUENCE;
 }
 
 // retorna sequencia n sequencias depois da especificada, n pertence a [-15, +inf)
