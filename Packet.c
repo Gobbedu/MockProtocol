@@ -79,8 +79,8 @@ void read_packet(unsigned char *buffer)
     printf("packet Tamanho  : %d\n", get_packet_tamanho(buffer));
     printf("packet Sequencia: %d\n", get_packet_sequence(buffer));
     printf("packet Tipo     : %s\n", get_type_packet(buffer));              // string com tipo
-    printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
-    // print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer));
+    // printf("packet Dados    : %.*s\n",get_packet_tamanho(buffer), get_packet_data(buffer));   // print n bytes da string em data
+    print_bytes("packet Dados: ", buffer+TAM_HEADER, get_packet_tamanho(buffer));
     printf("packet Paridade : %d\n", get_packet_parity(buffer));            // paridade int 8bits   (pacote[-1])
     printf("Total-----------: %d Bytes\n", get_packet_len(buffer));         // tamanho total do pacote
 }
@@ -91,7 +91,7 @@ int is_our_packet(unsigned char *buffer)
     return header->MI == MARCADOR_INICIO;
 }
 
-int is_our_mask(unsigned long *buffer)
+int is_our_mask(unsigned short *buffer)
 {
     unsigned char header[TAM_HEADER];
     for(int i = 0; i < TAM_HEADER; i++)

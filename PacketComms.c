@@ -36,16 +36,12 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
         {   
 
             resposta = recebe_msg(soquete);
-            if(!resposta){
-                lost_conn++;
-                moven(send_seq, -1);
+            if(!resposta)
                 break;
-            }
 
             if (!check_sequence(resposta, *recv_seq)){              // sequencia incorreta
                 printf("envia_recebe esperava recv_seq com %d mas recebeu %d\n", *recv_seq, get_packet_sequence(resposta));
                 free(resposta);
-                moven(send_seq, -1);
                 break;
             }
 
@@ -56,7 +52,6 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             if (!check_parity (resposta)){             
                 printf("resposta: (%s) ; mensagem: (%.*s)\n", get_type_packet(resposta), get_packet_tamanho(resposta), resposta+TAM_HEADER);
                 free(resposta);
-                moven(send_seq, -1);
                 break;  // exit response loop & re-send 
             }
             lost_conn = 0;
@@ -70,6 +65,10 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             next(recv_seq);
             return pacote;
         }
+        moven(send_seq, -1);
+        lost_conn++;
+
+
     }
 
     printf("Erro de comunicacao, servidor nao responde :(\n");
@@ -302,11 +301,16 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // COLOCA MASCARA
-    len_byte = sizeof(unsigned long);
-    unsigned long mask[TAM_PACOTE];
-    memset(mask, -1, len_byte*TAM_PACOTE); // mascarar com 0, 1, 170, 85, 255, nao funciona
-    for(int i = 0; i < TAM_PACOTE; i++)
-        mask[i] = (unsigned long) packet[i];
+    len_byte = sizeof(unsigned short);
+    unsigned short mask[TAM_PACOTE];
+    // memset(mask, -1, len_byte*TAM_PACOTE); // mascarar com 0, 1, 170, 85, 255, nao funciona
+    memset(mask, 0, len_byte*TAM_PACOTE);
+    for(int i = 0; i < TAM_PACOTE; i++) {
+        mask[i] = (unsigned short) packet[i];
+        if (packet[i] == 0x88 || packet[i] == 0x81) {
+            mask[i] += 0xff00;
+        }
+    }
     
     // ENVIA MASCARA
     // for(i = 0; i < NTENTATIVAS; i++){
@@ -336,10 +340,10 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned long buffer[TAM_PACOTE];
+    unsigned short buffer[TAM_PACOTE];
     int bytes, len_byte, i;
 
-    len_byte = sizeof(unsigned long);
+    len_byte = sizeof(unsigned short);
 
     // VERIFICA //
     for(i = 0; i < NTENTATIVAS; i++){
