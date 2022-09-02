@@ -290,7 +290,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 // tenta enviar mensagem NTENTATIVAS vezes
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
 {
-    int bytes, len_byte, i;
+    int bytes, len_byte;
     // CRIA PACOTE
     unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
     if(!packet){
@@ -348,15 +348,13 @@ unsigned char *recebe_msg(int socket)
     for(i = 0; i < NTENTATIVAS;){
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
-        if(errno == EAGAIN || errno == EWOULDBLOCK){                // se ocorreu timeout
-            perror("recv error in recebe_msg");
-            i++;
-            continue;                                              // espera msg dnv
-        }
-        if(bytes == len_byte*TAM_PACOTE)        // recebeu tamanho do pacote  
+        if(bytes == len_byte*TAM_PACOTE){       // recebeu tamanho do pacote  
             if(is_our_mask(buffer))             // e eh nosso pacote
                 break;                          // retorna
-        i = 0;                                  // nao deu timeo, reseta i
+        }
+        else if(errno == EAGAIN || errno == EWOULDBLOCK)                // se ocorreu timeout
+            i++;
+            // perror("recv error in recebe_msg");
         // usleep(0);
     }
 
