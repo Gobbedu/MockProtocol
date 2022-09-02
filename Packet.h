@@ -21,6 +21,7 @@
  */
 
 #define TAM_PACOTE      67 // [0, 66]
+// #define TAM_PACOTE      128
 #define MAX_DADOS       63
 #define TAM_HEADER      3   
 #define MAX_SEQUENCE    16  // para usar em modulo, limite eh na verdade 15
@@ -109,7 +110,7 @@ char *get_type_packet(unsigned char* buffer);
 /* ================ funcoes auxiliares ================ */
 void read_packet(unsigned char *buffer);
 int is_our_packet(unsigned char *buffer);
-int is_our_mask(unsigned long *buffer);
+int is_our_mask(unsigned short *buffer);
 int is_valid_type(int tipo);
 void print_bytes(char *nome,unsigned char *buf, int n);
 

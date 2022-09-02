@@ -132,7 +132,7 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     getcwd(pwd, sizeof(pwd));           // verificando o diretorio atual
 
     // CALCULA MEMORIA DISPONIVEL // (em bytes)
-    char *bashdf = "df --output=avail / | tail -n +2 > /tmp/tamanho_gb.txt";
+    char *bashdf = "df --output=avail --block-size=1 / | tail -n +2 > /tmp/tamanho_gb.txt";
     char *bashrm = "rm /tmp/tamanho_gb.txt";
     system(bashdf);
     FILE *memfree = fopen("/tmp/tamanho_gb.txt", "r");

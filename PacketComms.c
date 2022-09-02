@@ -67,6 +67,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             next(recv_seq);
             return pacote;
         }
+        moven(send_seq, -1);
     }
 
     printf("Erro de comunicacao, servidor nao responde :(\n");
@@ -299,11 +300,11 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // COLOCA MASCARA
-    len_byte = sizeof(unsigned long);
-    unsigned long mask[TAM_PACOTE];
+    len_byte = sizeof(unsigned short);
+    unsigned short mask[TAM_PACOTE];
     memset(mask, -1, len_byte*TAM_PACOTE); // mascarar com 0, 1, 170, 85, 255, nao funciona
     for(int i = 0; i < TAM_PACOTE; i++)
-        mask[i] = (unsigned long) packet[i];
+        mask[i] = (unsigned short) packet[i];
     
     // ENVIA MASCARA
     // for(i = 0; i < NTENTATIVAS; i++){
@@ -333,19 +334,22 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
 unsigned char *recebe_msg(int socket)
 {
-    unsigned long buffer[TAM_PACOTE];
+    unsigned short buffer[TAM_PACOTE];
     int bytes, len_byte, i;
 
-    len_byte = sizeof(unsigned long);
+    len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    for(i = 0; i < NTENTATIVAS; i++){
+    // for(i = 0; i < NTENTATIVAS; i++){
+    while (1) {
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
         // if (bytes == len_byte*TAM_PACOTE)                           // recebeu tamanho do pacote
         if(bytes > 0)
             if (is_our_mask(buffer))                                // e eh nosso pacote
                 break;
+            else
+                fprintf(stderr, "ignorei\n");
         usleep(0);
     }
 
