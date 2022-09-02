@@ -344,18 +344,20 @@ unsigned char *recebe_msg(int socket)
     len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    // PRECISA CONTAR NTENTATIVAS TIMEOUT, if(timeo) i++
-    // for(i = 0; i < NTENTATIVAS; i++){
-    while (1) {
+    // while (1) {
+    for(i = 0; i < NTENTATIVAS;){
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
-        // if (bytes == len_byte*TAM_PACOTE)                           // recebeu tamanho do pacote
-        if(bytes > 0)
-            if (is_our_mask(buffer))                                // e eh nosso pacote
-                break;
-            else
-                fprintf(stderr, "ignorei\n");
-        usleep(0);
+        if(errno == EAGAIN || errno == EWOULDBLOCK){                // se ocorreu timeout
+            perror("recv error in recebe_msg");
+            i++;
+            continue;                                              // espera msg dnv
+        }
+        if(bytes == len_byte*TAM_PACOTE)        // recebeu tamanho do pacote  
+            if(is_our_mask(buffer))             // e eh nosso pacote
+                break;                          // retorna
+        i = 0;                                  // nao deu timeo, reseta i
+        // usleep(0);
     }
 
     // nao recebeu pacote valido
