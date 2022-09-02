@@ -14,8 +14,8 @@ int main(){
     char pwd[PATH_MAX];
     char comando[COMMAND_BUFF];
 
-    soquete = ConexaoRawSocket("lo");         // abre o socket -> lo vira ifconfig to pc que manda
-    // soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
+    // soquete = ConexaoRawSocket("lo");         // abre o socket -> lo vira ifconfig to pc que manda
+    soquete = ConexaoRawSocket("enp1s0f1");   // abre o socket -> lo vira ifconfig to pc que manda
     // // soquete = ConexaoRawSocket("eno1");
     // soquete = ConexaoRawSocket("enp3s0");   // pc gobbo
 
