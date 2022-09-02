@@ -95,6 +95,40 @@ void empty_netbuff(int socket)
         recv(socket, buffer, TAM_PACOTE, 0);
 }
 
+/*  ERRO QUE APARECE PRO CLIENTE
+meu pc tem 452416790528 bytes de memoria livre 
+recebe sequencial start
+recebe recebeu (7) mas esperava (8) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (0) mas esperava (1) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (10) mas esperava (11) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (7) mas esperava (8) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (2) mas esperava (3) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (5) mas esperava (6) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (14) mas esperava (15) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (8) mas esperava (9) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (10) mas esperava (11) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (1) mas esperava (2) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (9) mas esperava (10) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (8) mas esperava (9) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (5) mas esperava (6) como sequencia
+ENVIOU NACK, erro de sequencia
+recebe recebeu (10) mas esperava (11) como sequencia
+.
+.
+.
+*/
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
     int leu_sz, blocks = 0;
@@ -139,7 +173,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         if(!resposta){
             printf("timeo recebe_msg() envia_sequencial (ACK, NACK)\n");
             tentativas++;
-            moven(this_seq, -1);
+            // moven(this_seq, -1);
             continue;
         }   tentativas = 0;
        
@@ -245,7 +279,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
                 // empty_netbuff(socket);
-                
+                printf("ENVIOU NACK, erro de sequencia\n");
                 // free(pacote);
                 continue;   // volta a ouvir
         }
@@ -255,7 +289,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
                 seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
                 // empty_netbuff(socket);
-                
+                printf("ENVIOU NACK, erro de paridade\n");
                 // free(pacote);
                 continue;   // volta a ouvir
         }
@@ -272,7 +306,6 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
         }
         seq = ptoa(pacote);
         envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
-        printf("enviou ACK\n");
 
         // free(pacote);
     }
@@ -326,8 +359,8 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
 
     // MASCARA FOI ENVIADA
-    printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
-    read_packet(packet);
+    // printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
+    // read_packet(packet);
     next(this_seq);
     free(packet);
     return true;
@@ -344,16 +377,16 @@ unsigned char *recebe_msg(int socket)
     len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    // while (1) {
-    for(i = 0; i < NTENTATIVAS;){
+    // for(i = 0; i < NTENTATIVAS;){
+    while (1) {
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
         if(bytes == len_byte*TAM_PACOTE){       // recebeu tamanho do pacote  
             if(is_our_mask(buffer))             // e eh nosso pacote
                 break;                          // retorna
         }
-        else if(errno == EAGAIN || errno == EWOULDBLOCK)                // se ocorreu timeout
-            i++;
+        // else if(errno == EAGAIN || errno == EWOULDBLOCK)                // se ocorreu timeout
+        //     i++;
             // perror("recv error in recebe_msg");
         // usleep(0);
     }
@@ -369,8 +402,8 @@ unsigned char *recebe_msg(int socket)
     for(int j = 0; j < TAM_PACOTE; j++)
         pacote[j] = (unsigned char) buffer[j];
         
-    printf("RECEBEU (%d) BYTES\n", bytes);
-    read_packet(pacote);
+    // printf("RECEBEU (%d) BYTES\n", bytes);
+    // read_packet(pacote);
 
     // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
