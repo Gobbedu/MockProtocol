@@ -21,6 +21,7 @@
  */
 
 #define TAM_PACOTE      67 // [0, 66]
+// #define TAM_PACOTE      128
 #define MAX_DADOS       63
 #define TAM_HEADER      3   
 #define MAX_SEQUENCE    16  // para usar em modulo, limite eh na verdade 15

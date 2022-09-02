@@ -67,8 +67,6 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
         }
         moven(send_seq, -1);
         lost_conn++;
-
-
     }
 
     printf("Erro de comunicacao, servidor nao responde :(\n");
@@ -346,13 +344,17 @@ unsigned char *recebe_msg(int socket)
     len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    for(i = 0; i < NTENTATIVAS; i++){
+    // PRECISA CONTAR NTENTATIVAS TIMEOUT, if(timeo) i++
+    // for(i = 0; i < NTENTATIVAS; i++){
+    while (1) {
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
         // if (bytes == len_byte*TAM_PACOTE)                           // recebeu tamanho do pacote
         if(bytes > 0)
             if (is_our_mask(buffer))                                // e eh nosso pacote
                 break;
+            else
+                fprintf(stderr, "ignorei\n");
         usleep(0);
     }
 

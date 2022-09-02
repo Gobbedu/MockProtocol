@@ -98,6 +98,7 @@ int is_our_mask(unsigned short *buffer)
         header[i] = (unsigned char) buffer[i];
     
     envelope_packet *pacote = (envelope_packet*) &header;
+
     return pacote->MI == MARCADOR_INICIO;
 }
 
