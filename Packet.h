@@ -50,7 +50,7 @@ enum TIPOS {
     DESC_ARQ = 24,
     DADOS = 32,
     FIM = 46,
-    SHOW_NA_TELA = 63,
+    MOSTRA_TELA = 63,
     };
 
 // variaveis globais definidas no .c, mas declaradas no .h

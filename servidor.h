@@ -12,6 +12,10 @@ void server_switch(unsigned char * buffer);
 void cdc(unsigned char * buffer);
 void mkdirc(unsigned char * buffer);
 void get(unsigned char*buffer);
+int put(unsigned char *buffer);
+int ls(u_char *buffer);
+
+
 
 unsigned int sequencia(void);
 

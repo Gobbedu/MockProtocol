@@ -95,14 +95,14 @@ void client_switch(char* comando){
     }
     else if (strncmp(comando, "get", 3) == 0)
     {
-        parametro += 3;                       // remove "get"
+        parametro += 3;                         // remove "get"
         parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
         // get(comando, GET);
         cliente_sinaliza((unsigned char*)parametro, GET);
     }
     else if (strncmp(comando, "put", 3) == 0)
     {
-        
+
     }
     else
     {
@@ -175,6 +175,19 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     return false;
 }
 
+int response_LS(u_char *resposta, u_char *parametro)
+{
+    // RECEBEU MOSTRA_TELA
+    // RECEBE_SEQUENCIAL DADOS
+    // LE TEMP FILE E MOSTRA RESULTADO NA TELA
+    // REMOVE TEMP FILE
+    return false;
+}
+
+int response_PUT(u_char *resposta, u_char *parametro)
+{
+    return false;
+}
 
 /* errno: 
  *  A - No such file or directory   : 2
@@ -191,42 +204,40 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
     // /* cria pacote com parametro para cd no server */
     // envia pacote pro servidor e aguarda uma resposta
     resposta = envia_recebe(soquete, &client_seq, &nxts_serve, parametro, tipo, strlen((char*)parametro));
-    if(!resposta) return false;
+    if(!resposta)   
+        return false;
 
     data = get_packet_data(resposta);
     switch (get_packet_type(resposta))
     {
-        case OK:        // resposta de (cd, mkdir, put)
-            printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-            // free_packet(packet);
-            free(resposta);
-            free(data);
-            return true;
+        case OK:            // resposta de (cd, mkdir, put)
+            printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+            break;
 
-        case DESC_ARQ:  // resposta de (get)
+        case DESC_ARQ:      // resposta do get
             read_packet(resposta);
             response_GET(resposta, parametro);  // parametro eh file
-            // free_packet(packet);
-            free(resposta);
-            free(data);
-            return true;
+            break;
 
-        case ERRO:      // resposta de (ls, cd, mkdir, put, get)
-            printf("resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
-            // free_packet(packet);
+        case MOSTRA_TELA:  // resposta do ls
+            response_LS(resposta, parametro);
+            break;
+
+        case ERRO:          // resposta de (ls, cd, mkdir, put, get)
+            printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
             free(resposta);
             free(data);
             return false;
 
-        case SHOW_NA_TELA:  // resposta do ls
-            return true;
+        default:            // fedeu
+            printf("cliente_sinaliza recebeu tipo nao definido\n");
+            read_packet(resposta);
+            break;
     }
-
-    printf("nao caiu em nenhum caso acima\n");
-    read_packet(resposta);
-
     free(resposta);
-    return false;
+    free(data);
+
+    return true;
 }
 
 // atualiza e retorna proxima sequencia

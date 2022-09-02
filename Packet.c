@@ -119,7 +119,7 @@ int is_valid_type(int tipo){
         case DESC_ARQ:
         case DADOS:
         case FIM:
-        case SHOW_NA_TELA:
+        case MOSTRA_TELA:
             return 1;
             break;
         default:
@@ -240,7 +240,7 @@ char *get_type_packet(unsigned char *buffer){
         case FIM:
             return "FIM";
             break;
-        case SHOW_NA_TELA:
+        case MOSTRA_TELA:
             return "MOSTRA NA TELA";
             break;
 
