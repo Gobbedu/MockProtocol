@@ -7,6 +7,9 @@ a.out
 *.txt
 *.mp4
 *.mp3
+*.iso
+*.gif
+*.pdf
 (copy)*
 cliente
 servidor
