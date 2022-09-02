@@ -30,7 +30,7 @@ unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *r
             lost_conn++;
             continue;
         }
-
+        try = 0;
         // said do loop soh se server responde nack, (ok e erro retorna da funcao)
         while(try<NTENTATIVAS)
         {   
@@ -178,7 +178,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         if(!resposta){
             printf("timeo recebe_msg() envia_sequencial (ACK, NACK)\n");
             tentativas++;
-            // moven(this_seq, -1);
+            moven(this_seq, -1);
             continue;
         }   tentativas = 0;
        
@@ -212,6 +212,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
             default:
                 printf("tipo nao definido\n");
+                read_packet(resposta);
                 free(resposta);
                 return false;
         }
@@ -222,6 +223,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     if(tentativas == NTENTATIVAS){
         printf("perdeu conexao em envia_sequencial, return\n");
         free(data);
+        moven(other_seq, -1);
         return false;
     }
 
@@ -279,6 +281,12 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 
         // NACK //
         if (!check_sequence(pacote, *other_seq)){
+                if(get_packet_sequence(pacote) == peekn(*other_seq, -1))
+                {   // recebeu a mesma mensagem de antes, reenvia resposta
+                    moven(this_seq, -1);
+                    envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
+                    continue;
+                }
                 // paridade diferente, dado: (sequencia esperada)
                 printf("recebe recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
                 seq = itoa(*other_seq);
@@ -287,6 +295,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
                 printf("ENVIOU NACK, erro de sequencia\n");
                 // free(pacote);
                 continue;   // volta a ouvir
+
         }
         if(!check_parity(pacote)){
                 printf("recebe recebeu pacote com erro de paridade, NACK\n");
@@ -318,6 +327,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
     fclose(dst);
     if(try == NTENTATIVAS){
         printf("algo deu errado com recebe sequencial..\n");
+        moven(this_seq, -1); // nao recebeu as varias respostas do server ou perdeu oq agnt enviou
         return false;
     }
     return true;
@@ -328,7 +338,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 // tenta enviar mensagem NTENTATIVAS vezes
 int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
 {
-    int bytes, len_byte;
+    int bytes, len_byte, i;
     // CRIA PACOTE
     unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
     if(!packet){
@@ -349,15 +359,21 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     }
     
     // ENVIA MASCARA
-    // for(i = 0; i < NTENTATIVAS; i++){
+    for(i = 0; i < NTENTATIVAS;){
         bytes = send(socket, mask, len_byte*TAM_PACOTE, 0);       // envia packet para o socket
-        if(bytes != len_byte*TAM_PACOTE){
+        if(bytes == len_byte*TAM_PACOTE)
+            break;
+        if(bytes <= 0)
+        {
+            perror("erro no send");
+            i++;
+        }
     //         break;
     //     usleep(0);
-    // }
+    }
 
     // NAO ENVIOU MASCARA
-    // if(i == NTENTATIVAS){
+    if(i == NTENTATIVAS){
         fprintf(stderr, "NAO FOI POSSIVEL ENVIAR MASCARA\n");
         free(packet);
         return false;
@@ -390,8 +406,10 @@ unsigned char *recebe_msg(int socket)
             if(is_our_mask(buffer))             // e eh nosso pacote
                 break;                          // retorna
         }
-        // else if(errno == EAGAIN || errno == EWOULDBLOCK)                // se ocorreu timeout
-        //     i++;
+        // if(errno == EAGAIN || errno == EWOULDBLOCK){                // se ocorreu timeout
+        if(errno == EAGAIN)
+            i++;
+
             // perror("recv error in recebe_msg");
         // usleep(0);
     }
