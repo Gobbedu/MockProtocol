@@ -8,7 +8,7 @@
     - [] se cliente nn conseguiu conversar com o servidor, nao incrementar o contador    
 */
 
-#define NTENTATIVAS 3 // numero de vezes que vai tentar ler/enviar um pacote
+#define NTENTATIVAS 10 // numero de vezes que vai tentar ler/enviar um pacote
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
 
 
@@ -245,7 +245,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
     int wrote, len_data, try;
     // char pacote[TAM_PACOTE];
     unsigned char *pacote;
-    unsigned char *seq;
+    unsigned char seq[2];
 
     printf("recebe sequencial start\n");
 
@@ -280,17 +280,19 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
         }
 
         // NACK //
+        sprintf((char*) seq, "%d", *other_seq);
         if (!check_sequence(pacote, *other_seq)){
                 if(get_packet_sequence(pacote) == peekn(*other_seq, -1))
                 {   // recebeu a mesma mensagem de antes, reenvia resposta
                     moven(this_seq, -1);
-                    envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
+                    sprintf((char*) seq, "%d", peekn(*other_seq, -1));
+                    envia_msg(socket, this_seq, ACK, seq, 2); // free(seq);
                     continue;
                 }
                 // paridade diferente, dado: (sequencia esperada)
                 printf("recebe recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
-                seq = itoa(*other_seq);
-                envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
+                // seq = itoa(*other_seq);
+                envia_msg(socket, this_seq, NACK, seq, 2); // free(seq);
                 // empty_netbuff(socket);
                 printf("ENVIOU NACK, erro de sequencia\n");
                 // free(pacote);
@@ -300,8 +302,8 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
         if(!check_parity(pacote)){
                 printf("recebe recebeu pacote com erro de paridade, NACK\n");
                 // sequencia diferente, dado:(sequencia atual)
-                seq = itoa(*other_seq);
-                envia_msg(socket, this_seq, NACK, seq, 2); free(seq);
+                // seq = itoa(*other_seq);
+                envia_msg(socket, this_seq, NACK, seq, 2); // free(seq);
                 // empty_netbuff(socket);
                 printf("ENVIOU NACK, erro de paridade\n");
                 // free(pacote);
@@ -318,9 +320,9 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
             perror("return, build wrote 0 bytes, ");
             return false;
         }
-        seq = ptoa(pacote);
-        envia_msg(socket, this_seq, ACK, seq , 2); free(seq);
-
+        // seq = ptoa(pacote);
+        sprintf((char*) seq, "%d", get_packet_sequence(pacote));
+        envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
         // free(pacote);
     }
 
@@ -357,7 +359,8 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
             mask[i] += 0xff00;
         }
     }
-    
+    free(packet);
+
     // ENVIA MASCARA
     for(i = 0; i < NTENTATIVAS;){
         bytes = send(socket, mask, len_byte*TAM_PACOTE, 0);       // envia packet para o socket
@@ -375,15 +378,13 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
     // NAO ENVIOU MASCARA
     if(i == NTENTATIVAS){
         fprintf(stderr, "NAO FOI POSSIVEL ENVIAR MASCARA\n");
-        free(packet);
         return false;
     }
 
     // MASCARA FOI ENVIADA
     printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
-    read_packet(packet);
+    read_packet((u_char *)mask);
     next(this_seq);
-    free(packet);
     return true;
 }
 
