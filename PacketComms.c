@@ -383,7 +383,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 
     // MASCARA FOI ENVIADA
     printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
-    read_packet((u_char *)mask);
+    // read_packet((u_char *)mask);
     next(this_seq);
     return true;
 }
@@ -427,7 +427,7 @@ unsigned char *recebe_msg(int socket)
         pacote[j] = (unsigned char) buffer[j];
         
     printf("RECEBEU (%d) BYTES\n", bytes);
-    read_packet(pacote);
+    // read_packet(pacote);
 
     // memcpy(pacote, buffer, TAM_PACOTE);
     return pacote;
