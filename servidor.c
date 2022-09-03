@@ -295,8 +295,11 @@ int put(unsigned char *buffer)
     // nxts_cli
     FILE *arquivo;
 
-    arquivo = fopen((char*)put, "w");
-
+    char *dest = calloc(6+strlen((char*)put), sizeof(char));
+    sprintf(dest, "(copy)%s", put);
+    arquivo = fopen((char*)dest, "w");
+    free(dest);
+    
     // ERRO AO LER ARQUIVO, retorna //
     // PESQUISAR ERROS DO FOPEN PARA ESCRITA
     if(!arquivo){        

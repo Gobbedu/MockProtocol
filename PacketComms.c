@@ -209,7 +209,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 // nao damos fclose no file 
 int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
-    int wrote, len_data, try;
+    int wrote, len_data, try, w_all;
     // char pacote[TAM_PACOTE];
     unsigned char *pacote;
     unsigned char seq[2];
@@ -230,7 +230,7 @@ int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned i
     rewind(file);
 
     // MONTA ARQUIVO //
-    try = 0;
+    try = w_all = 0;
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
         pacote = recebe_msg(socket);
@@ -288,6 +288,7 @@ int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned i
             perror("return, build wrote 0 bytes, ");
             return false;
         }
+        w_all += wrote;
         // seq = ptoa(pacote);
         sprintf((char*) seq, "%d", get_packet_sequence(pacote));
         envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
@@ -300,6 +301,8 @@ int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned i
         moven(this_seq, -1); // nao recebeu as varias respostas do server ou perdeu oq agnt enviou
         return false;
     }
+
+    printf("escreveu %d !\n", w_all);
     return true;
 }
 
