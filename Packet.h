@@ -8,10 +8,12 @@
 #include <stdio.h>
 #include <time.h>
 
+
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
-#include <arpa/inet.h>
 
 // VAR GLOBAL //
 
@@ -36,6 +38,8 @@
 #define MAGENTA "\x1b[35m"
 #define CYAN    "\x1b[36m"
 #define RESET   "\x1b[0m"
+
+struct stat st;     // para ler o tamanho disponivel com stat()
 
 enum TIPOS {
     OK = 1,
@@ -78,7 +82,7 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ stream functions ================ */
-int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, unsigned int *other_seq);
+int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
 int envia_sequencial (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
 
 unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados);

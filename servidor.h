@@ -6,8 +6,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-struct stat st;
-
 void server_switch(unsigned char * buffer);
 void cdc(unsigned char * buffer);
 void mkdirc(unsigned char * buffer);

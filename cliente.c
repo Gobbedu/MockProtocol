@@ -102,7 +102,10 @@ void client_switch(char* comando){
     }
     else if (strncmp(comando, "put", 3) == 0)
     {
-
+        parametro += 3;                         // remove "put"
+        parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
+        if(cliente_sinaliza((u_char*) parametro, PUT))
+            response_PUT((u_char*) parametro);        
     }
     else
     {
@@ -163,8 +166,20 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
         return false;
     }
 
+    // DESTINO //
+    char *dest = calloc(6+strlen((char*)file), sizeof(char));
+    sprintf(dest, "(copy)%s", file);
+    
+    FILE *dst = fopen(dest, "w");
+    free(dest);
+    // FILE *dst = fopen("teste_dst.txt", "w");
+    if(!dst){
+        printf("could not open destine file, terminate\n");
+        return false; 
+    }
+
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve)){
+    if(recebe_sequencial(soquete, dst, &client_seq, &nxts_serve)){
         printf("arquivo (%s) transferido com sucesso!\n", file);
         return true;
     }
@@ -184,9 +199,65 @@ int response_LS(u_char *resposta, u_char *parametro)
     return false;
 }
 
-int response_PUT(u_char *resposta, u_char *parametro)
+int response_PUT(u_char *parametro)
 {
-    return false;
+    unsigned char *resposta;
+    unsigned char *mem, flag;
+
+    FILE *put_file = fopen((char*)parametro, "r");
+
+    // ERRO AO LER ARQUIVO, retorna //
+    if(!put_file){        
+        switch (errno){             // errno da 11, que nao eh erro esperado
+            case 2:                 // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = arq_nn_E;
+                break;
+            case 13*256:            // nunca acontece (erro de permissao)
+                flag = sem_permissao;
+                break;
+            default:
+                flag = '?';
+                break;
+        };
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag);
+
+        if(!envia_msg(soquete, &client_seq, ERRO, &flag, 1))
+            printf("put nao enviou erro para servidor\n");
+
+        return false;         
+        // fim da funcao get, se ERRO
+    }
+
+    // ARQUIVO ABERTO //
+    stat((char*)put_file, &st);                      // devolve atributos do arquivo
+    mem = calloc(16, sizeof(char));             // 16 digitos c/ bytes cabe ate 999Tb
+    sprintf((char*)mem, "%ld", st.st_size);     // salva tamanho do arquivo em bytes
+
+    if(!envia_msg(soquete, &client_seq, DESC_ARQ, mem, 16))
+        printf("NAO FOI POSSVIEL ENVIAR DESC_ARQ PARA SERVIDOR\n");
+
+    resposta = recebe_msg(soquete);
+    if(!resposta){
+        printf("NAO RECEBEU RESPOSTA (OK;ERRO;NACK) DO SERVIDOR\n");
+        return false;
+    }
+ 
+    next(&nxts_serve);
+    read_packet(resposta);
+    // define comportamento com base na resposta do servidor
+    switch (get_packet_type(resposta))
+    {
+    case ERRO:                  // arquivo nao cabe
+        return false;                 // termina funcao get
+    
+    case OK:                    // envia arquivo
+        if(envia_sequencial(soquete, put_file, &client_seq, &nxts_serve))
+            printf("arquivo transferido com sucesso\n");
+        else
+            printf("nao foi possivel tranferiri arquivo\n");
+    }
+
+    return true;
 }
 
 /* errno: 

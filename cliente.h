@@ -12,7 +12,7 @@ int cliente_sinaliza(unsigned char *comando, int tipo);
 void client_switch(char* comando);
 
 int response_GET(unsigned char * resposta, unsigned char *parametro);
-int response_PUT(u_char *resposta, u_char *parametro);
+int response_PUT(u_char *parametro);
 int response_LS(u_char *resposta, u_char *parametro);
 
 

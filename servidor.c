@@ -1,7 +1,6 @@
 #include "servidor.h"
 #include "Packet.h"
 #include "ConexaoRawSocket.h"
-#include <sys/stat.h>
 
 // - [] CHECAR FUNCAO check_packet sem loopback, MUDA CALCULO DA PARIDADE int paradis = 1;
 // - [] (TODO) VERIFICAR SE SEQUENCIA CORRETA, ENVIA DE VOLTA SEQUENCIA NACK 
@@ -233,17 +232,20 @@ int put(unsigned char *buffer)
     // TENTA CRIAR ARQUIVO E RESPONDE OK;NACK;ERRO
     // RECEBE DESC_ARQ DE OK E RESPODE OK;NACK;ERRO
     // SE OK CHAMA RECEBE SEQUENCIAL
-    
+    /*
     // int bytes, resultado, mem_livre;
     long mem_livre, tamanho = 0;
     char pwd[PATH_MAX];
-    u_char *file = NULL;
-    u_char *dado = NULL;
+    unsigned char* dado;
 
+    char *file = get_packet_data(buffer);
+    FILE *arquivo = fopen(file, "w");
+    if(!)
+    
     // dado = get_packet_data(resposta_srv);
-    tamanho = atoi((char*)dado);               // pegando o tamanho do arquivo em bytes, enviado pelo servidor
-    free(dado);
-    getcwd(pwd, sizeof(pwd));           // verificando o diretorio atual
+    // tamanho = atoi((char*)dado);        // pegando o tamanho do arquivo em bytes, enviado pelo servidor
+    // free(dado);
+    // getcwd(pwd, sizeof(pwd));           // verificando o diretorio atual
 
     // CALCULA MEMORIA DISPONIVEL // (em bytes)
     char *bashdf = "df --output=avail --block-size=1 / | tail -n +2 > /tmp/tamanho_gb.txt";
@@ -260,6 +262,96 @@ int put(unsigned char *buffer)
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
         printf("Espaço insuficiente!\n");
+        if(!envia_msg(soquete, &client_seq, ERRO, NULL, 0))
+            printf("Não foi possivel responder o erro!\n");
+        // resposta_cli = make_packet(sequencia(), ERRO, &sem_espaco, 1);
+        // bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
+        // if(bytes<0)                                             // pega erros, se algum
+        //     printf("falha ao enviar pacote de resposta do get, erro: %s\n", strerror(errno));         // print detalhes do erro
+        // free(resposta_cli);
+        return false;
+    }
+
+    // ARQUIVO CABE //
+    if(!envia_msg(soquete, &client_seq, OK, NULL, 0)){
+        printf("nao foi possivel responder ok para o servidor\n");
+        return false;
+    }
+
+    // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
+    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve)){
+        printf("arquivo (%s) transferido com sucesso!\n", file);
+        return true;
+    }
+
+    printf("nao foi possivel transferir o arquivo (%s)\n", file);
+    // moven(&nxts_serve, -1);
+    // next(&nxts_serve);
+    */
+    unsigned char *resposta;
+    unsigned char flag;
+
+    u_char *put = get_packet_data(buffer);  // arquivo a abrir
+    // nxts_cli
+    FILE *arquivo;
+
+    arquivo = fopen((char*)put, "w");
+
+    // ERRO AO LER ARQUIVO, retorna //
+    // PESQUISAR ERROS DO FOPEN PARA ESCRITA
+    if(!arquivo){        
+        switch (errno){             // errno da 11, que nao eh erro esperado
+            case 2:                 // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = arq_nn_E;
+                break;
+            case 13*256:            // nunca acontece (erro de permissao)
+                flag = sem_permissao;
+                break;
+            default:
+                flag = '?';
+                break;
+        };
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag);
+
+        if(!envia_msg(soquete, &serv_seq, ERRO, &flag, 1))
+            printf("get nao respondeu erro para cliente\n");
+
+        return false;         
+        // fim da funcao get, se ERRO
+    }
+
+    // ARQUIVO ABERTO //
+    // stat((char*)get, &st);                     // devolve atributos do arquivo
+    // mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
+    // sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
+
+    // CALCULA MEMORIA DISPONIVEL // (em bytes)
+    long int mem_livre;
+    char *bashdf = "df --output=avail --block-size=1 / | tail -n +2 > /tmp/tamanho_gb.txt";
+    char *bashrm = "rm /tmp/tamanho_gb.txt";
+    system(bashdf);
+    FILE *memfree = fopen("/tmp/tamanho_gb.txt", "r");
+    fscanf(memfree, "%ld", &mem_livre);
+    fclose(memfree);
+    system(bashrm);
+
+    if(!envia_msg(soquete, &serv_seq, OK, NULL, 0))
+        printf("NAO FOI POSSVIEL ENVIAR OK PARA CLIENTE\n");
+
+    resposta = recebe_msg(soquete);
+    if(!resposta){
+        printf("NAO RECEBEU RESPOSTA (OK;ERRO;NACK) DO CLIENTE\n");
+        return false;
+    }
+
+    // IF NACK (TRATAR)
+ 
+    next(&nxts_cli);
+    read_packet(resposta);
+    int tamanho = atoi((char*)get_packet_data(resposta));
+    // ARQUIVO NAO CABE, retorna //
+    if(mem_livre < tamanho){
+        printf("Espaço insuficiente!\n");
         if(!envia_msg(soquete, &serv_seq, ERRO, NULL, 0))
             printf("Não foi possivel responder o erro!\n");
         // resposta_cli = make_packet(sequencia(), ERRO, &sem_espaco, 1);
@@ -273,18 +365,17 @@ int put(unsigned char *buffer)
     // ARQUIVO CABE //
     if(!envia_msg(soquete, &serv_seq, OK, NULL, 0)){
         printf("nao foi possivel responder ok para o servidor\n");
-        return false;
+        return false;   
     }
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, file, &serv_seq, &nxts_cli)){
-        printf("arquivo (%s) transferido com sucesso!\n", file);
+    if(recebe_sequencial(soquete, arquivo, &serv_seq, &nxts_cli)){
+        printf("arquivo (%s) transferido com sucesso!\n", put);
         return true;
     }
 
-    printf("nao foi possivel transferir o arquivo (%s)\n", file);
-    // moven(&nxts_serve, -1);
-    // next(&nxts_serve);
+
+    // return;
     return false;
 }
 

@@ -100,40 +100,6 @@ void empty_netbuff(int socket)
         recv(socket, buffer, TAM_PACOTE, 0);
 }
 
-/*  ERRO QUE APARECE PRO CLIENTE
-meu pc tem 452416790528 bytes de memoria livre 
-recebe sequencial start
-recebe recebeu (7) mas esperava (8) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (0) mas esperava (1) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (10) mas esperava (11) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (7) mas esperava (8) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (2) mas esperava (3) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (5) mas esperava (6) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (14) mas esperava (15) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (8) mas esperava (9) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (10) mas esperava (11) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (1) mas esperava (2) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (9) mas esperava (10) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (8) mas esperava (9) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (5) mas esperava (6) como sequencia
-ENVIOU NACK, erro de sequencia
-recebe recebeu (10) mas esperava (11) como sequencia
-.
-.
-.
-*/
 int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
 {
     int leu_sz, blocks = 0;
@@ -240,7 +206,8 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     return true;
 }
 
-int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, unsigned int *other_seq){    
+// nao damos fclose no file 
+int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try;
     // char pacote[TAM_PACOTE];
@@ -250,16 +217,17 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
     printf("recebe sequencial start\n");
 
     // DESTINO //
-    char *dest = calloc(6+strlen((char*)file), sizeof(char));
-    sprintf(dest, "(copy)%s", file);
+    // char *dest = calloc(6+strlen((char*)file), sizeof(char));
+    // sprintf(dest, "(copy)%s", file);
     
-    FILE *dst = fopen(dest, "w");
-    free(dest);
-    // FILE *dst = fopen("teste_dst.txt", "w");
-    if(!dst){
-        printf("could not open destine file, terminate\n");
-        return false; 
-    }
+    // FILE *dst = fopen(dest, "w");
+    // free(dest);
+    // // FILE *dst = fopen("teste_dst.txt", "w");
+    // if(!dst){
+    //     printf("could not open destine file, terminate\n");
+    //     return false; 
+    // }
+    rewind(file);
 
     // MONTA ARQUIVO //
     try = 0;
@@ -315,7 +283,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
 
         // data comeca 3 bytes depois do inicio
         len_data  = get_packet_tamanho(pacote);         // tamanho em bytes a escrever no arquivo
-        wrote = fwrite((void*) (pacote+3), sizeof(char), len_data, dst);
+        wrote = fwrite((void*) (pacote+3), sizeof(char), len_data, file);
         if(wrote == 0){
             perror("return, build wrote 0 bytes, ");
             return false;
@@ -326,7 +294,7 @@ int recebe_sequencial(int socket, unsigned char *file, unsigned int *this_seq, u
         // free(pacote);
     }
 
-    fclose(dst);
+    // fclose(dst);
     if(try == NTENTATIVAS){
         printf("algo deu errado com recebe sequencial..\n");
         moven(this_seq, -1); // nao recebeu as varias respostas do server ou perdeu oq agnt enviou
