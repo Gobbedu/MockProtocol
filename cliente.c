@@ -232,6 +232,9 @@ int response_PUT(u_char *parametro)
     stat((char*)put_file, &st);                      // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));             // 16 digitos c/ bytes cabe ate 999Tb
     sprintf((char*)mem, "%ld", st.st_size);     // salva tamanho do arquivo em bytes
+    int tamanho_bytes = atoi((char*)mem);
+    free(mem);
+
 
     if(!envia_msg(soquete, &client_seq, DESC_ARQ, mem, 16))
         printf("NAO FOI POSSVIEL ENVIAR DESC_ARQ PARA SERVIDOR\n");
@@ -251,7 +254,7 @@ int response_PUT(u_char *parametro)
         return false;                 // termina funcao get
     
     case OK:                    // envia arquivo
-        if(envia_sequencial(soquete, put_file, &client_seq, &nxts_serve))
+        if(envia_sequencial(soquete, put_file, &client_seq, &nxts_serve, tamanho_bytes))
             printf("arquivo transferido com sucesso\n");
         else
             printf("nao foi possivel tranferiri arquivo\n");

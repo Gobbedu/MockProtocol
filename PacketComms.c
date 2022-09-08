@@ -100,7 +100,7 @@ void empty_netbuff(int socket)
         recv(socket, buffer, TAM_PACOTE, 0);
 }
 
-int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq)
+int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, int total)
 {
     int leu_sz, blocks = 0;
     // char resposta[TAM_PACOTE];
@@ -120,29 +120,30 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     int enviou = true;
     while(tentativas < NTENTATIVAS){  
         if(enviou){
-        memset(data, 0, max_data);
-        leu_sz = fread((void *)data, sizeof(char), max_data, file);
-        printf("leu %d bytes do arquivo\n", leu_sz);
-        leu_bytes += leu_sz;
-        // VALIDA LEITURA //
-        if(leu_sz == 0){ // nao leu nada, erro ou eof
-            printf("src leu 0 bytes, break\n");
-            break;
-        }
-        blocks++;
-        enviou = false;
+            memset(data, 0, max_data);
+            leu_sz = fread((void *)data, sizeof(char), max_data, file);
+            // printf("leu %d bytes do arquivo\n", leu_sz);
+            leu_bytes += leu_sz;
+            // VALIDA LEITURA //
+            if(leu_sz == 0){ // nao leu nada, erro ou eof
+                // printf("src leu 0 bytes, break\n");
+                break;
+            }
+            blocks++;
+            enviou = false;
+            ProgressBar("Enviando ", leu_bytes, total);
         }
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
         if(!envia_msg(socket, this_seq, DADOS, data, leu_sz)){
-            printf("timeo envia_msg() em envia_sequencial (DADOS)\n");
+            printf("\ntimeo envia_msg() em envia_sequencial (DADOS)\n");
             tentativas++;
             continue;
         }   
 
         resposta = recebe_msg(socket);
         if(!resposta){
-            printf("timeo recebe_msg() envia_sequencial (ACK, NACK)\n");
+            printf("\ntimeo recebe_msg() envia_sequencial (ACK, NACK)\n");
             tentativas++;
             moven(this_seq, -1);
             continue;
@@ -151,11 +152,11 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
         // read_packet(resposta);
 
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
-            printf("recebe_mgs() em envia sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
+            printf("\nrecebe_mgs() em envia sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
             return false; // por enquanto nao corrige NACK ou ACK
         }
         if(!check_parity(resposta)){    // se paridade errada
-            printf("recebe_msg() recebeu mensagem com erro na paridade\n");
+            printf("\nrecebe_msg() recebeu mensagem com erro na paridade\n");
             return false;
         }   
         enviou = true;
@@ -163,9 +164,9 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
-                printf("caiu no NACK\n");
+                // printf("caiu no NACK\n");
                 if(fseek(file, (long) (-leu_sz), SEEK_CUR) != 0){
-                    perror("fseek == 0");
+                    perror("\nfseek == 0");
                     free(resposta);
                     return false;
                 }
@@ -173,11 +174,11 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
                 break;
             
             case ACK:   // continua loop normalmente
-                printf("caiu no ACK\n");
+                // printf("caiu no ACK\n");
                 break;
 
             default:
-                printf("tipo nao definido\n");
+                printf("\ntipo nao definido\n");
                 read_packet(resposta);
                 free(resposta);
                 return false;
@@ -187,7 +188,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
     }
 
     if(tentativas == NTENTATIVAS){
-        printf("perdeu conexao em envia_sequencial, return\n");
+        printf("\nperdeu conexao em envia_sequencial, return\n");
         free(data);
         moven(other_seq, -1);
         return false;
@@ -195,14 +196,14 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 
     // ajeitar ultimo pacote
     if(!envia_msg(socket, this_seq, FIM, NULL, 0)){
-        printf("nao foi possivel enviar_msg() FIM\n");
+        printf("\nnao foi possivel enviar_msg() FIM\n");
         return false;
     }
         
     // next(this_seq);
     free(data);
     blocks++;
-    printf("finished chunking (%d) blocks, leu (%d) bytes\n", blocks, leu_bytes);
+    printf("\nfinished chunking (%d) blocks, leu (%d) bytes\n", blocks, leu_bytes);
     return true;
 }
 
@@ -339,7 +340,7 @@ int envia_msg(int socket, u_int *this_seq, int tipo, u_char *parametro, int n_by
             break;
         if(bytes <= 0)
         {
-            perror("erro no send");
+            perror("erro no send em envia_msg");
             i++;
         }
     //         break;
@@ -353,7 +354,7 @@ int envia_msg(int socket, u_int *this_seq, int tipo, u_char *parametro, int n_by
     }
 
     // MASCARA FOI ENVIADA
-    printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
+    // printf("SENT (%d) BYTES mas de real foram(%d) \n", bytes, bytes/len_byte);
     // read_packet((u_char *)mask);
     next(this_seq);
     return true;
@@ -397,7 +398,7 @@ u_char *recebe_msg(int socket)
     for(int j = 0; j < TAM_PACOTE; j++)
         pacote[j] = (unsigned char) buffer[j];
         
-    printf("RECEBEU (%d) BYTES\n", bytes);
+    // printf("RECEBEU (%d) BYTES\n", bytes);
     // read_packet(pacote);
 
     // memcpy(pacote, buffer, TAM_PACOTE);
@@ -436,4 +437,26 @@ unsigned char *itoa(int sequencia){
     unsigned char *text = calloc(2, sizeof(char));
     sprintf((char*)text, "%d", sequencia);
     return text;
+}
+
+void ProgressBar( char label[], int step, int total )
+{
+    //progress width
+    const int pwidth = 72;
+
+    //minus label len
+    int width = pwidth - strlen( label );
+    int pos = ( step * width ) / total ;
+    
+    int percent = ( step * 100 ) / total;
+
+    printf( "%s["GREEN, label );
+
+    //fill progress bar with =
+    for ( int i = 0; i < pos; i++ )  printf( "%c", '=' );
+
+    //fill progress bar with spaces
+    printf(RESET"%*c", width - pos + 1, ']' );
+    printf( " %3d%%\r", percent );
+    fflush(stdout);
 }

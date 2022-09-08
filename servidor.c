@@ -24,10 +24,10 @@ int main()
 {
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
-    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("enp1s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("eno1");
-    // soquete = ConexaoRawSocket("enp3s0");
+    soquete = ConexaoRawSocket("enp3s0");
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -197,6 +197,8 @@ void get(unsigned char *buffer){
     stat((char*)get, &st);                     // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
     sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
+    int tamanho_bytes = atoi((char*)mem);
+    free(mem);
 
     if(!envia_msg(soquete, &serv_seq, DESC_ARQ, mem, 16))
         printf("NAO FOI POSSVIEL ENVIAR DESC_ARQ PARA CLIENTE\n");
@@ -216,7 +218,7 @@ void get(unsigned char *buffer){
         return;                 // termina funcao get
     
     case OK:                    // envia arquivo
-        if(envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli))
+        if(envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli, tamanho_bytes))
             printf("arquivo transferido com sucesso\n");
         else
             printf("nao foi possivel tranferiri arquivo\n");
