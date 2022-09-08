@@ -167,19 +167,19 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     }
 
     // DESTINO //
-    char *dest = calloc(6+strlen((char*)file), sizeof(char));
-    sprintf(dest, "(copy)%s", file);
+    // char *dest = calloc(6+strlen((char*)file), sizeof(char));
+    // sprintf(dest, "(copy)%s", file);
     
-    FILE *dst = fopen(dest, "w");
-    free(dest);
-    // FILE *dst = fopen("teste_dst.txt", "w");
-    if(!dst){
-        printf("could not open destine file, terminate\n");
-        return false; 
-    }
+    // FILE *dst = fopen(dest, "w");
+    // free(dest);
+    // // FILE *dst = fopen("teste_dst.txt", "w");
+    // if(!dst){
+    //     printf("could not open destine file, terminate\n");
+    //     return false; 
+    // }
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, dst, &client_seq, &nxts_serve)){
+    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve)){
         printf("arquivo (%s) transferido com sucesso!\n", file);
         return true;
     }

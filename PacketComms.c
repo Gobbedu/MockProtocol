@@ -207,7 +207,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 }
 
 // nao damos fclose no file 
-int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq){    
+int recebe_sequencial(int socket,u_char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try, w_all;
     // char pacote[TAM_PACOTE];
@@ -217,17 +217,17 @@ int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned i
     printf("recebe sequencial start\n");
 
     // DESTINO //
-    // char *dest = calloc(6+strlen((char*)file), sizeof(char));
-    // sprintf(dest, "(copy)%s", file);
+    char *dest = calloc(6+strlen((char*)file), sizeof(char));
+    sprintf(dest, "(copy)%s", file);
     
-    // FILE *dst = fopen(dest, "w");
-    // free(dest);
-    // // FILE *dst = fopen("teste_dst.txt", "w");
-    // if(!dst){
-    //     printf("could not open destine file, terminate\n");
-    //     return false; 
-    // }
-    rewind(file);
+    FILE *dst = fopen(dest, "w");
+    free(dest);
+    // FILE *dst = fopen("teste_dst.txt", "w");
+    if(!dst){
+        printf("could not open destine file, terminate\n");
+        return false; 
+    }
+    // rewind(file);
 
     // MONTA ARQUIVO //
     try = w_all = 0;
@@ -283,7 +283,7 @@ int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned i
 
         // data comeca 3 bytes depois do inicio
         len_data  = get_packet_tamanho(pacote);         // tamanho em bytes a escrever no arquivo
-        wrote = fwrite((void*) (pacote+3), sizeof(char), len_data, file);
+        wrote = fwrite((void*) (pacote+3), sizeof(char), len_data, dst);
         if(wrote == 0){
             perror("return, build wrote 0 bytes, ");
             return false;

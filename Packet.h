@@ -82,7 +82,7 @@ typedef struct envelope_packet envelope_packet;
 // PROTOTIPOS //
 
 /* ================ stream functions ================ */
-int recebe_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
+int recebe_sequencial(int socket, u_char *file, unsigned int *this_seq, unsigned int *other_seq);
 int envia_sequencial (int socket, FILE *file, unsigned int *this_seq, unsigned int *other_seq);
 
 unsigned char *envia_recebe(int soquete, unsigned int *send_seq, unsigned int *recv_seq, unsigned char *dados, int tipo, int bytes_dados);
