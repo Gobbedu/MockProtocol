@@ -197,7 +197,7 @@ void get(unsigned char *buffer){
     stat((char*)get, &st);                     // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
     sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
-    int tamanho_bytes = atoi((char*)mem);
+    long tamanho_bytes = atoi((char*)mem);
     free(mem);
 
     if(!envia_msg(soquete, &serv_seq, DESC_ARQ, mem, 16))

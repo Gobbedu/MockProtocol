@@ -229,12 +229,10 @@ int response_PUT(u_char *parametro)
     }
 
     // ARQUIVO ABERTO //
-    stat((char*)put_file, &st);                      // devolve atributos do arquivo
+    stat((char*)parametro, &st);                      // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));             // 16 digitos c/ bytes cabe ate 999Tb
     sprintf((char*)mem, "%ld", st.st_size);     // salva tamanho do arquivo em bytes
-    int tamanho_bytes = atoi((char*)mem);
-    free(mem);
-
+    long tamanho_bytes = atoi((char*)mem);
 
     if(!envia_msg(soquete, &client_seq, DESC_ARQ, mem, 16))
         printf("NAO FOI POSSVIEL ENVIAR DESC_ARQ PARA SERVIDOR\n");

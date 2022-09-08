@@ -8,9 +8,8 @@
     - [] se cliente nn conseguiu conversar com o servidor, nao incrementar o contador    
 */
 
-#define NTENTATIVAS 10 // numero de vezes que vai tentar ler/enviar um pacote
+#define NTENTATIVAS 30 // numero de vezes que vai tentar ler/enviar um pacote
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
-
 
 /* envia UM pacote com dados especificados e espera UMA resposta,
  * tenta NTENTATIVAS vezes as operacoes envolvidas
@@ -100,12 +99,12 @@ void empty_netbuff(int socket)
         recv(socket, buffer, TAM_PACOTE, 0);
 }
 
-int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, int total)
+int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, long total)
 {
-    int leu_sz, blocks = 0;
-    // char resposta[TAM_PACOTE];
+    time_t start, end;
+    long leu_sz, blocks = 0;
     unsigned char *resposta;
-    int leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
+    long leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
     printf("envia sequencial start\n");
     rewind(file);
@@ -115,9 +114,11 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
     unsigned char *data = calloc(max_data, sizeof(char));                      // info q vai no campo dados no pacote
     
     // QUEBRA ARQUIVO EM BLOCOS //
-    printf("chunking...\n");
     int tentativas = 0;
     int enviou = true;
+    int porcento = -1;
+    // clock_t start = clock();
+    time(&start);
     while(tentativas < NTENTATIVAS){  
         if(enviou){
             memset(data, 0, max_data);
@@ -131,7 +132,13 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
             }
             blocks++;
             enviou = false;
-            ProgressBar("Enviando ", leu_bytes, total);
+            if((leu_bytes*100/total) > porcento )
+            {
+                // printf("(%ld):(%ld) ", leu_bytes, total);
+                // fflush(stdout);
+                ProgressBar("Enviando ", leu_bytes, total);
+                porcento++;
+            }
         }
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
@@ -152,15 +159,22 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
         // read_packet(resposta);
 
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
-            printf("\nrecebe_mgs() em envia sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
+            printf("\recebe_mgs() em _sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
             return false; // por enquanto nao corrige NACK ou ACK
         }
         if(!check_parity(resposta)){    // se paridade errada
-            printf("\nrecebe_msg() recebeu mensagem com erro na paridade\n");
+            printf("\recebe_msg() em envia_sequencial recebeu mensagem com erro na paridade\n");
             return false;
         }   
-        enviou = true;
         // next(this_seq);
+
+        // QUAL MENSAGEM RECEBEU ACK/NACK 
+        if(atoi((char*)resposta+3) == peekn(*this_seq, -2)){
+            // se recebeu ack/nack mensagem anterior
+            printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
+            moven(this_seq, -1);
+            continue;
+        }   enviou = true;
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
@@ -202,8 +216,11 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
         
     // next(this_seq);
     free(data);
-    blocks++;
-    printf("\nfinished chunking (%d) blocks, leu (%d) bytes\n", blocks, leu_bytes);
+    // clock_t end = clock(); //(float)(end-start)/CLOCKS_PER_SEC
+    time(&end);
+    printf("\nTempo de Transferencia: (%.2f) segundos\n", difftime(end,start));
+    // blocks++;
+    // printf("\nfinished chunking (%d) blocks, leu (%d) bytes\n", blocks, leu_bytes);
     return true;
 }
 
@@ -211,7 +228,6 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
 int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try, w_all;
-    // char pacote[TAM_PACOTE];
     unsigned char *pacote;
     unsigned char seq[2];
 
@@ -232,6 +248,9 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
 
     // MONTA ARQUIVO //
     try = w_all = 0;
+    u_char memoria_recebe[TAM_PACOTE];  // mensagem recebida anteriormente
+    int memoria_envia = ACK;               // dados mensagem enviada anteriormente
+
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
         pacote = recebe_msg(socket);
@@ -248,16 +267,26 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
             break;
         }
 
+        // ENVIA PERDEU RESPOSTA DO RECEBE //
+        if(memcmp(memoria_recebe, pacote, TAM_PACOTE) == 0){
+            printf("\nrecebe_sequencial recebeu o mesmo pacote de antes\n");
+            moven(this_seq, -1);
+            sprintf((char*)seq, "%d", *this_seq);
+            envia_msg(socket, this_seq, memoria_envia, seq , 2); 
+            continue;
+        }
+
         // NACK //
         sprintf((char*) seq, "%d", *other_seq);
         if (!check_sequence(pacote, *other_seq)){
-                if(get_packet_sequence(pacote) == peekn(*other_seq, -1))
-                {   // recebeu a mesma mensagem de antes, reenvia resposta
-                    moven(this_seq, -1);
-                    sprintf((char*) seq, "%d", peekn(*other_seq, -1));
-                    envia_msg(socket, this_seq, ACK, seq, 2); // free(seq);
-                    continue;
-                }
+                // if(get_packet_sequence(pacote) == peekn(*other_seq, -1))
+                // {   // recebeu a mesma mensagem de antes, reenvia resposta
+                //     moven(this_seq, -1);
+                //     sprintf((char*) seq, "%d", peekn(*other_seq, -1));
+                //     envia_msg(socket, this_seq, ACK, seq, 2); // free(seq);
+                //     memoria_envia = ACK;
+                //     continue;
+                // }
                 // paridade diferente, dado: (sequencia esperada)
                 printf("recebe recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
                 // seq = itoa(*other_seq);
@@ -293,7 +322,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         // seq = ptoa(pacote);
         sprintf((char*) seq, "%d", get_packet_sequence(pacote));
         envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
-        // free(pacote);
+        free(pacote);
     }
 
     fclose(dst); 
@@ -371,7 +400,7 @@ u_char *recebe_msg(int socket)
     len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    for(i = 0; i < NTENTATIVAS;){
+    for(i = 0; i < NTENTATIVAS*NTENTATIVAS;){
     // while (1) {
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
@@ -439,13 +468,16 @@ unsigned char *itoa(int sequencia){
     return text;
 }
 
-void ProgressBar( char label[], int step, int total )
+void ProgressBar( char label[], long step, long total )
 {
     //progress width
     const int pwidth = 72;
 
     //minus label len
     int width = pwidth - strlen( label );
+    if(!step || !width || !total)
+        return;
+
     int pos = ( step * width ) / total ;
     
     int percent = ( step * 100 ) / total;
