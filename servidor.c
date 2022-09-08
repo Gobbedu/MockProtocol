@@ -298,7 +298,7 @@ int put(unsigned char *buffer)
     char *dest = calloc(6+strlen((char*)put), sizeof(char));
     sprintf(dest, "(copy)%s", put);
     arquivo = fopen((char*)dest, "w");
-    // free(dest);
+    free(dest);
     
     // ERRO AO LER ARQUIVO, retorna //
     // PESQUISAR ERROS DO FOPEN PARA ESCRITA
@@ -322,7 +322,7 @@ int put(unsigned char *buffer)
         return false;         
         // fim da funcao get, se ERRO
     }
-    fclose(arquivo);
+    // fclose(arquivo);
     // ARQUIVO ABERTO //
     // stat((char*)get, &st);                     // devolve atributos do arquivo
     // mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
@@ -372,7 +372,7 @@ int put(unsigned char *buffer)
     }
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, (u_char*)dest, &serv_seq, &nxts_cli)){
+    if(recebe_sequencial(soquete, (u_char*)put, &serv_seq, &nxts_cli)){
         printf("arquivo (%s) transferido com sucesso!\n", put);
         return true;
     }

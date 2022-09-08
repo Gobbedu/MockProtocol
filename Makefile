@@ -18,3 +18,4 @@ clean:
 purge: clean
 	@rm -f servidor cliente
 
+run: clean purge all

@@ -207,7 +207,7 @@ int envia_sequencial(int socket, FILE *file, unsigned int *this_seq, unsigned in
 }
 
 // nao damos fclose no file 
-int recebe_sequencial(int socket,u_char *file, unsigned int *this_seq, unsigned int *other_seq){    
+int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, unsigned int *other_seq){    
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try, w_all;
     // char pacote[TAM_PACOTE];
@@ -295,7 +295,7 @@ int recebe_sequencial(int socket,u_char *file, unsigned int *this_seq, unsigned 
         // free(pacote);
     }
 
-    // fclose(dst);
+    fclose(dst); 
     if(try == NTENTATIVAS){
         printf("algo deu errado com recebe sequencial..\n");
         moven(this_seq, -1); // nao recebeu as varias respostas do server ou perdeu oq agnt enviou
@@ -309,11 +309,11 @@ int recebe_sequencial(int socket,u_char *file, unsigned int *this_seq, unsigned 
 // envia uma mensagem para o socket, com verificacao de send() bytes > 0
 // retorna true se enviou com sucesso, e falso c.c., ATUALIZA SEQUENCIA
 // tenta enviar mensagem NTENTATIVAS vezes
-int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *parametro, int n_bytes)
+int envia_msg(int socket, u_int *this_seq, int tipo, u_char *parametro, int n_bytes)
 {
     int bytes, len_byte, i;
     // CRIA PACOTE
-    unsigned char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
+    u_char *packet = make_packet(*this_seq, tipo, parametro, n_bytes);
     if(!packet){
         fprintf(stderr, "ERRO NA CRIACAO DO PACOTE\n");
         return false;
@@ -362,7 +362,7 @@ int envia_msg(int socket, unsigned int *this_seq, int tipo, unsigned char *param
 // recebe uma mensagem do socket, tenta receber mensagem NTENTATIVAS vezes, deve receber free()
 // verifica se recv deu timeout, bytes > 0 e se eh nosso pacote, NAO ATUALIZA SEQUENCIA
 // retorna NULL se nao foi possivel receber a msg, e a mensagem c.c.
-unsigned char *recebe_msg(int socket)
+u_char *recebe_msg(int socket)
 {
     unsigned short buffer[TAM_PACOTE];
     int bytes, len_byte, i;
