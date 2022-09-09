@@ -180,7 +180,7 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     // }
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve)){
+    if(recebe_sequencial(soquete, file, &client_seq, &nxts_serve, tamanho)){
         printf("arquivo (%s) transferido com sucesso!\n", file);
         return true;
     }
@@ -200,7 +200,7 @@ int response_LS(u_char *resposta, u_char *parametro)
     }
     // RECEBE_SEQUENCIAL DADOS
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, (u_char *)"ls.txt", &client_seq, &nxts_serve)){
+    if(recebe_sequencial(soquete, (u_char *)"ls.txt", &client_seq, &nxts_serve, 0)){ // nao tem como saber tamanho, faz tam = 0
         printf("arquivo ls.txt transferido com sucesso!\n");
     }
 

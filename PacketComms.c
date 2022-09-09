@@ -225,7 +225,7 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
 }
 
 // nao damos fclose no file 
-int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, unsigned int *other_seq){    
+int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, unsigned int *other_seq, long total){    
     // charresposta[TAM_PACOTE];
     int wrote, len_data, try, w_all;
     unsigned char *pacote;
@@ -250,7 +250,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
     try = w_all = 0;
     u_char memoria_recebe[TAM_PACOTE];  // mensagem recebida anteriormente
     int memoria_envia = ACK;               // dados mensagem enviada anteriormente
-
+    int porcento = -1;
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
         pacote = recebe_msg(socket);
@@ -319,6 +319,13 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
             return false;
         }
         w_all += wrote;
+
+        if((w_all*100/total) > porcento )
+        {
+            ProgressBar("Enviando ", w_all, total);
+            porcento++;
+        }
+
         // seq = ptoa(pacote);
         sprintf((char*) seq, "%d", get_packet_sequence(pacote));
         envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
