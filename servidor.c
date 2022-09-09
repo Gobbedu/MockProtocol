@@ -422,7 +422,7 @@ int ls(u_char *buffer){
     }
 
     // ARQUIVO ABERTO //
-    stat((char*)get, &st);                     // devolve atributos do arquivo
+    stat((char*)"/tmp/ls.txt", &st);                     // devolve atributos do arquivo
     mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
     sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
     long tamanho_bytes = atoi((char*)mem);
@@ -439,7 +439,7 @@ int ls(u_char *buffer){
 
     // ENVIA_SEQUENCIAL TMP FILE
     next(&nxts_cli);
-    read_packet(resposta);
+    // read_packet(resposta);
     // define comportamento com base na resposta do cliente
     switch (get_packet_type(resposta))
     {

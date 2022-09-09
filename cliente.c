@@ -91,8 +91,6 @@ void client_switch(char* comando){
     }
     else if(strncmp(comando, "lss", 3) == 0)
     {   
-        // parametro += 3;                         // remove "lss"
-        // parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
         parametro[2] = ' ';
         cliente_sinaliza((unsigned char*)parametro, LS);
     }
@@ -223,7 +221,8 @@ int response_LS(u_char *resposta, u_char *parametro)
         memset(info, '\0', sizeof(info));
     }
     // REMOVE TEMP FILE
-    system("rm (copy)ls.txt");
+    char *bashrm = "rm *ls.txt";
+    system(bashrm);
     return true;
 }
 
