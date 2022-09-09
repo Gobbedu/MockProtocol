@@ -91,7 +91,10 @@ void client_switch(char* comando){
     }
     else if(strncmp(comando, "lss", 3) == 0)
     {   
-
+        // parametro += 3;                         // remove "lss"
+        // parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
+        parametro[2] = " ";
+        cliente_sinaliza((unsigned char*)parametro, LS);
     }
     else if (strncmp(comando, "get", 3) == 0)
     {
@@ -193,9 +196,37 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
 int response_LS(u_char *resposta, u_char *parametro)
 {
     // RECEBEU MOSTRA_TELA
+    if(!envia_msg(soquete, &client_seq, OK, NULL, 0)){
+        printf("nao foi possivel responder ok para o servidor\n");
+        return false;
+    }
     // RECEBE_SEQUENCIAL DADOS
+    // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
+    if(recebe_sequencial(soquete, "/tmp/ls.txt", &client_seq, &nxts_serve)){
+        printf("arquivo ls.txt transferido com sucesso!\n");
+        return true;
+    }
+
+    printf("nao foi possivel transferir o arquivo ls.txt\n");
+    
     // LE TEMP FILE E MOSTRA RESULTADO NA TELA
+    FILE *ls;
+    char info[100];
+
+    memset(info, '\0', sizeof(info));
+
+    ls = fopen("/tmp/ls.txt", "r");
+
+    if(ls == NULL){
+        printf("Erro, nao foi possivel abrir o arquivo\n");
+    }
+    else
+    while( (fgets(info, sizeof(info), ls))!=NULL ){
+        printf("%s", info);
+        memset(info, '\0', sizeof(info));
+    }
     // REMOVE TEMP FILE
+    system("rm /tmp/ls.txt");
     return false;
 }
 

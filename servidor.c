@@ -384,16 +384,81 @@ int put(unsigned char *buffer)
     return false;
 }
 
-int ls(u_char *buffer)
-{
-
+int ls(u_char *buffer){
+    unsigned char *resposta;
+    unsigned char *mem, flag;
+    
     // RECEBE COMANDO LS EM DADOS DO PACOTE
+    char * buffer_aux = calloc(1, sizeof(buffer) + sizeof(" > /tmp/ls.txt"));
+    strcat(buffer_aux, " > /tmp/ls.txt");
     // EXECUTA COMANDO NO SERVER E SALVA EM TMP FILE
-    // RESPONDE NACK;ERRO;MOSTRA_TELA
-    // ENVIA_SEQUENCIAL TMP FILE
-    // SUCESSO REMOVE TMP FILE
+    system(buffer_aux);
 
-    return false;
+    FILE *arquivo;
+
+    arquivo = fopen("/tmp/ls.txt", "r");
+
+    // RESPONDE NACK;ERRO;MOSTRA_TELA
+    // ERRO AO LER ARQUIVO, retorna //
+    if(!arquivo){        
+        switch (errno){             // errno da 11, que nao eh erro esperado
+            case 2:                 // ret devolve ($?)*256 de mkdir em system(mkdir)
+                flag = arq_nn_E;
+                break;
+            case 13*256:            // nunca acontece (erro de permissao)
+                flag = sem_permissao;
+                break;
+            default:
+                flag = '?';
+                break;
+        };
+        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag);
+
+        if(!envia_msg(soquete, &serv_seq, ERRO, &flag, 1))
+            printf("ls nao respondeu erro para cliente\n");
+
+        return;         
+        // fim da funcao ls, se ERRO
+    }
+
+    // ARQUIVO ABERTO //
+    stat((char*)get, &st);                     // devolve atributos do arquivo
+    mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
+    sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
+    long tamanho_bytes = atoi((char*)mem);
+    free(mem);
+
+    if(!envia_msg(soquete, &serv_seq, MOSTRA_TELA, "ls", 2))
+        printf("NAO FOI POSSVIEL ENVIAR MOSTRA_TELA PARA CLIENTE\n");
+
+    resposta = recebe_msg(soquete);
+    if(!resposta){
+        printf("NAO RECEBEU RESPOSTA (OK;ERRO;NACK) DO CLIENTE\n");
+        return;
+    }
+
+    // ENVIA_SEQUENCIAL TMP FILE
+    next(&nxts_cli);
+    read_packet(resposta);
+    // define comportamento com base na resposta do cliente
+    switch (get_packet_type(resposta))
+    {
+    case ERRO:                  // arquivo nao cabe
+        return;                 // termina funcao get
+    
+    case OK:                    // envia arquivo
+        if(envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli, tamanho_bytes))
+            printf("arquivo transferido com sucesso\n");
+        else
+            printf("nao foi possivel tranferiri arquivo\n");
+        return;
+    }
+
+    // SUCESSO REMOVE TMP FILE
+    system("rm /tmp/ls.txt");
+    free(buffer_aux);
+
+    return;
 }
 
 
