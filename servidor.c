@@ -417,7 +417,7 @@ int ls(u_char *buffer){
         if(!envia_msg(soquete, &serv_seq, ERRO, &flag, 1))
             printf("ls nao respondeu erro para cliente\n");
 
-        return;         
+        return 0;         
         // fim da funcao ls, se ERRO
     }
 
@@ -428,13 +428,13 @@ int ls(u_char *buffer){
     long tamanho_bytes = atoi((char*)mem);
     free(mem);
 
-    if(!envia_msg(soquete, &serv_seq, MOSTRA_TELA, "ls", 2))
+    if(!envia_msg(soquete, &serv_seq, MOSTRA_TELA, (unsigned char *)"ls", 2))
         printf("NAO FOI POSSVIEL ENVIAR MOSTRA_TELA PARA CLIENTE\n");
 
     resposta = recebe_msg(soquete);
     if(!resposta){
         printf("NAO RECEBEU RESPOSTA (OK;ERRO;NACK) DO CLIENTE\n");
-        return;
+        return 0;
     }
 
     // ENVIA_SEQUENCIAL TMP FILE
@@ -444,21 +444,21 @@ int ls(u_char *buffer){
     switch (get_packet_type(resposta))
     {
     case ERRO:                  // arquivo nao cabe
-        return;                 // termina funcao get
+        return 0;               // termina funcao ls
     
     case OK:                    // envia arquivo
         if(envia_sequencial(soquete, arquivo, &serv_seq, &nxts_cli, tamanho_bytes))
             printf("arquivo transferido com sucesso\n");
         else
             printf("nao foi possivel tranferiri arquivo\n");
-        return;
+        return 0;
     }
 
     // SUCESSO REMOVE TMP FILE
     system("rm /tmp/ls.txt");
     free(buffer_aux);
 
-    return;
+    return 1;
 }
 
 

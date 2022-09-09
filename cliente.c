@@ -93,7 +93,7 @@ void client_switch(char* comando){
     {   
         // parametro += 3;                         // remove "lss"
         // parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
-        parametro[2] = " ";
+        parametro[2] = ' ';
         cliente_sinaliza((unsigned char*)parametro, LS);
     }
     else if (strncmp(comando, "get", 3) == 0)
@@ -202,7 +202,7 @@ int response_LS(u_char *resposta, u_char *parametro)
     }
     // RECEBE_SEQUENCIAL DADOS
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, "/tmp/ls.txt", &client_seq, &nxts_serve)){
+    if(recebe_sequencial(soquete, (u_char *)"/tmp/ls.txt", &client_seq, &nxts_serve)){
         printf("arquivo ls.txt transferido com sucesso!\n");
         return true;
     }
