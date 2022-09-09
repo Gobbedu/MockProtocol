@@ -202,20 +202,17 @@ int response_LS(u_char *resposta, u_char *parametro)
     }
     // RECEBE_SEQUENCIAL DADOS
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, (u_char *)"/tmp/ls.txt", &client_seq, &nxts_serve)){
+    if(recebe_sequencial(soquete, (u_char *)"ls.txt", &client_seq, &nxts_serve)){
         printf("arquivo ls.txt transferido com sucesso!\n");
-        return true;
     }
 
-    printf("nao foi possivel transferir o arquivo ls.txt\n");
-    
     // LE TEMP FILE E MOSTRA RESULTADO NA TELA
     FILE *ls;
     char info[100];
 
     memset(info, '\0', sizeof(info));
 
-    ls = fopen("/tmp/ls.txt", "r");
+    ls = fopen("(copy)ls.txt", "r");
 
     if(ls == NULL){
         printf("Erro, nao foi possivel abrir o arquivo\n");
@@ -226,8 +223,8 @@ int response_LS(u_char *resposta, u_char *parametro)
         memset(info, '\0', sizeof(info));
     }
     // REMOVE TEMP FILE
-    system("rm /tmp/ls.txt");
-    return false;
+    system("rm (copy)ls.txt");
+    return true;
 }
 
 int response_PUT(u_char *parametro)

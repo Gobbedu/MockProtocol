@@ -24,10 +24,10 @@ int main()
 {
     unsigned char *pacote;
     // soquete = ConexaoRawSocket("lo");
-    // soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
+    soquete = ConexaoRawSocket("enp2s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("enp1s0f1"); // abre o socket -> lo vira ifconfig to pc que recebe
     // soquete = ConexaoRawSocket("eno1");
-    soquete = ConexaoRawSocket("enp3s0");
+    // soquete = ConexaoRawSocket("enp3s0");
 
     struct timeval tv;
     tv.tv_sec = 1;
@@ -389,11 +389,11 @@ int ls(u_char *buffer){
     unsigned char *mem, flag;
     
     // RECEBE COMANDO LS EM DADOS DO PACOTE
-    char * buffer_aux = calloc(1, sizeof(buffer) + sizeof(" > /tmp/ls.txt"));
-    strcat(buffer_aux, " > /tmp/ls.txt");
+    u_char * buffer_aux = calloc(6 + strlen(" > /tmp/ls.txt"), sizeof(char));
+    buffer_aux = get_packet_data(buffer);
+    strcat((char *)buffer_aux, " > /tmp/ls.txt");
     // EXECUTA COMANDO NO SERVER E SALVA EM TMP FILE
-    system(buffer_aux);
-
+    system((char*)buffer_aux);
     FILE *arquivo;
 
     arquivo = fopen("/tmp/ls.txt", "r");
