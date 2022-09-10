@@ -8,7 +8,7 @@
     - [] se cliente nn conseguiu conversar com o servidor, nao incrementar o contador    
 */
 
-#define NTENTATIVAS 15 // numero de vezes que vai tentar ler/enviar um pacote
+#define NTENTATIVAS 10 // numero de vezes que vai tentar ler/enviar um pacote
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
 
 /* envia UM pacote com dados especificados e espera UMA resposta,
@@ -407,7 +407,7 @@ u_char *recebe_msg(int socket)
     len_byte = sizeof(unsigned short);
 
     // VERIFICA //
-    for(i = 0; i < NTENTATIVAS*NTENTATIVAS;){
+    for(i = 0; i < NTENTATIVAS;){
     // while (1) {
         memset(buffer, 0, len_byte*TAM_PACOTE);                     // limpa lixo de memoria antes de receber
         bytes = recv(socket, buffer, len_byte*TAM_PACOTE, 0);       // recebe dados do socket
@@ -416,11 +416,10 @@ u_char *recebe_msg(int socket)
                 break;                          // retorna
         }
         // if(errno == EAGAIN || errno == EWOULDBLOCK){                // se ocorreu timeout
-        if(errno == EAGAIN){
+        if(errno == EAGAIN && bytes < 0){
             i++;
-            // printf("%d \r", i);
-            // perror("recebe_msg");
-        }
+            continue;
+        } 
 
             // perror("recv error in recebe_msg");
         // usleep(0);
