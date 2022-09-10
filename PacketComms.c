@@ -132,7 +132,7 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
             }
             blocks++;
             enviou = false;
-            if((leu_bytes*100/total) > porcento )
+            if(total && (leu_bytes*100/total) > porcento )
             {
                 // printf("(%ld):(%ld) ", leu_bytes, total);
                 // fflush(stdout);
@@ -320,7 +320,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         }
         w_all += wrote;
 
-        if((w_all*100/total) > porcento )
+        if(total && (w_all*100/total) > porcento )
         {
             ProgressBar("Enviando ", w_all, total);
             porcento++;
