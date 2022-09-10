@@ -146,7 +146,7 @@ int response_GET(unsigned char * resposta_srv, unsigned char *file){
     system(bashrm);
 
     // caso o tamanho do arquivo seja maior que espaço livre
-    printf("\nmeu pc tem %ld bytes de memoria livre \n",mem_livre);
+    // printf("\nmeu pc tem %ld bytes de memoria livre \n",mem_livre);
 
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
@@ -271,7 +271,7 @@ int response_PUT(u_char *parametro)
     }
  
     next(&nxts_serve);
-    read_packet(resposta);
+    // read_packet(resposta);
     // define comportamento com base na resposta do servidor
     switch (get_packet_type(resposta))
     {
@@ -310,11 +310,11 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
     switch (get_packet_type(resposta))
     {
         case OK:            // resposta de (cd, mkdir, put)
-            printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+            // printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
             break;
 
         case DESC_ARQ:      // resposta do get
-            read_packet(resposta);
+            // read_packet(resposta);
             response_GET(resposta, parametro);  // parametro eh file
             break;
 
@@ -323,7 +323,7 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
             break;
 
         case ERRO:          // resposta de (ls, cd, mkdir, put, get)
-            printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+            // printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
             free(resposta);
             free(data);
             return false;
