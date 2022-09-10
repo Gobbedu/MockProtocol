@@ -13,8 +13,4 @@ void get(unsigned char*buffer);
 int put(unsigned char *buffer);
 int ls(u_char *buffer);
 
-
-
-unsigned int sequencia(void);
-
 #endif /* __SERVIDOR__*/ 

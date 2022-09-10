@@ -64,6 +64,7 @@ int main()
 void server_switch(unsigned char* buffer)
 {
     int tipo_lido = get_packet_type(buffer);
+    system("echo -n \"\nServer:\t \" && pwd");
 
 	switch (tipo_lido)
 	{
@@ -94,14 +95,15 @@ void cdc(unsigned char* buffer){
     int resultado, ret;
     // unsigned char *resposta;
     unsigned char *cd, flag[1];
+
+    printf("CD ");
     cd = get_packet_data(buffer);
     unsigned char *d = calloc(strcspn((char*)cd, " "), sizeof(unsigned char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
     strncpy((char*)d, (char*)cd, strcspn((char*)cd, " "));
 
-    if(getcwd(pwd, sizeof(pwd)))printf("before: %s\n", pwd);
+    // if(getcwd(pwd, sizeof(pwd)))printf("before: %s\n", pwd);
     ret = chdir((char*)d);
-    if(getcwd(pwd, sizeof(pwd)))printf("after: %s\n", pwd);
 
     if(ret == -1){
         resultado = ERRO;
@@ -116,11 +118,15 @@ void cdc(unsigned char* buffer){
                 flag[0] = '?';
                 break;
         };
-        printf("erro %d foi : %s ; flag (%c)\n",errno, strerror(errno), flag[0]);
+        printf("erro %d foi : %s (%s) ; flag (%c)\n",errno, strerror(errno), d, flag[0]);
     }
     else{
         resultado = OK;
+        if(getcwd(pwd, sizeof(pwd)))    
+            printf("New:\t %s\n", pwd);
     }
+
+
     // respota = recebe_msg(soquete);
     if(!envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO))
         return;     // nao foi possivel enviar o pacote
@@ -134,6 +140,7 @@ void mkdirc(unsigned char* buffer){
     // unsigned char *resposta;
     unsigned char *mkdir, flag[1];
 
+    printf("MKDIR "); fflush(stdout);
     mkdir = get_packet_data(buffer);
     ret = system((char*)mkdir);
 
@@ -154,6 +161,7 @@ void mkdirc(unsigned char* buffer){
     }
     else{
         resultado = OK;
+        printf("'%s' criado com sucesso!\n", mkdir+7);
     }
     if(!envia_msg(soquete, &serv_seq, resultado, flag, resultado == ERRO))
         return;     // nao foi possivel enviar o pacote
@@ -165,6 +173,7 @@ void get(unsigned char *buffer){
     unsigned char *resposta;
     unsigned char *get, *mem, flag;
 
+    printf("GET ");
     get = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
@@ -237,6 +246,7 @@ int put(unsigned char *buffer)
     unsigned char *resposta;
     unsigned char flag;
 
+    printf("PUT ");
     u_char *put = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
@@ -292,18 +302,13 @@ int put(unsigned char *buffer)
     // IF NACK (TRATAR)
  
     next(&nxts_cli);
-    read_packet(resposta);
+    // read_packet(resposta);
     long tamanho = atoi((char*)get_packet_data(resposta));
     // ARQUIVO NAO CABE, retorna //
     if(mem_livre < tamanho){
         printf("Espaço insuficiente!\n");
         if(!envia_msg(soquete, &serv_seq, ERRO, NULL, 0))
             printf("Não foi possivel responder o erro!\n");
-        // resposta_cli = make_packet(sequencia(), ERRO, &sem_espaco, 1);
-        // bytes = send(soquete, resposta_cli, TAM_PACOTE, 0);     // envia packet para o socket
-        // if(bytes<0)                                             // pega erros, se algum
-        //     printf("falha ao enviar pacote de resposta do get, erro: %s\n", strerror(errno));         // print detalhes do erro
-        // free(resposta_cli);
         return false;
     }
 
@@ -315,7 +320,7 @@ int put(unsigned char *buffer)
 
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
     if(recebe_sequencial(soquete, (u_char*)put, &serv_seq, &nxts_cli, tamanho)){
-        printf("arquivo (%s) transferido com sucesso!\n", put);
+        printf("\narquivo (%s) transferido com sucesso!\n", put);
         return true;
     }
 
@@ -327,7 +332,9 @@ int put(unsigned char *buffer)
 int ls(u_char *buffer){
     unsigned char *resposta;
     unsigned char *mem, flag;
-    
+
+    printf("LS ");
+
     // RECEBE COMANDO LS EM DADOS DO PACOTE
     u_char * buffer_aux = calloc(6 + strlen(" > /tmp/ls.txt"), sizeof(char));
     buffer_aux = get_packet_data(buffer);
@@ -399,13 +406,4 @@ int ls(u_char *buffer){
     free(buffer_aux);
 
     return 1;
-}
-
-
-// atualiza e retorna proxima sequencia
-unsigned int sequencia(void)
-{
-    int now = serv_seq;
-    serv_seq = (serv_seq+1)%MAX_SEQUENCE;
-    return now;
 }

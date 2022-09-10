@@ -339,7 +339,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         return false;
     }
 
-    printf("escreveu %d !\n", w_all);
+    // printf("escreveu %d !\n", w_all);
     return true;
 }
 
