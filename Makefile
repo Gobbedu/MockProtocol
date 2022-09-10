@@ -1,5 +1,5 @@
 CC = @gcc 								# compilador que queremos (@ esconde comando)
-CFLAGS = -Wall -g						# flags para compilar .c
+CFLAGS = -Wall -g -O0					# flags para compilar .c
 
 objs = 	\
 		ConexaoRawSocket.o \
