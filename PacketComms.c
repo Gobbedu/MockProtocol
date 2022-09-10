@@ -159,11 +159,11 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
         // read_packet(resposta);
 
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
-            printf("\recebe_mgs() em _sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
+            printf("\nrecebe_mgs() em envia_sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
             return false; // por enquanto nao corrige NACK ou ACK
         }
         if(!check_parity(resposta)){    // se paridade errada
-            printf("\recebe_msg() em envia_sequencial recebeu mensagem com erro na paridade\n");
+            printf("\nrecebe_msg() em envia_sequencial recebeu mensagem com erro na paridade\n");
             return false;
         }   
         // next(this_seq);
