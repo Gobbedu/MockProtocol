@@ -237,7 +237,6 @@ void get(unsigned char *buffer){
     return;
 }
 
-// copia do response_GET, nao funciona, nao rodar ainda
 int put(unsigned char *buffer)
 {
     // TENTA CRIAR ARQUIVO E RESPONDE OK;NACK;ERRO

@@ -105,7 +105,16 @@ void client_switch(char* comando){
     {
         parametro += 3;                         // remove "put"
         parametro += strspn(parametro, " ");    // remove ' '  no inicio do comando
-        if(cliente_sinaliza((u_char*) parametro, PUT))
+        stat(parametro, &st);
+        // if()       // se arquivo existe e eh arquivo regular
+        if(access(parametro, F_OK) != 0 || S_ISDIR(st.st_mode) == 1)
+        {
+            printf("ACCESS: (%d); ISDIR: (%d)\n", access(parametro, F_OK), S_ISDIR(st.st_mode));
+            perror("PUT");
+            return;
+        }
+
+        else if(cliente_sinaliza((u_char*) parametro, PUT))
             response_PUT((u_char*) parametro);        
     }
     else
@@ -232,7 +241,6 @@ int response_PUT(u_char *parametro)
     unsigned char *mem, flag;
 
     FILE *put_file = fopen((char*)parametro, "r");
-
     // ERRO AO LER ARQUIVO, retorna //
     if(!put_file){        
         switch (errno){             // errno da 11, que nao eh erro esperado
