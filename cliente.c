@@ -195,14 +195,14 @@ int response_LS(u_char *resposta, u_char *parametro)
 {
     // RECEBEU MOSTRA_TELA
     if(!envia_msg(soquete, &client_seq, OK, NULL, 0)){
-        printf("nao foi possivel responder ok para o servidor\n");
+        printf("response_LS: nao foi possivel responder ok para o servidor\n");
         return false;
     }
     // RECEBE_SEQUENCIAL DADOS
     // CASO resultado == OK, FAZER A LOGICA DAS JANELAS DESLIZANTES AQUI
-    if(recebe_sequencial(soquete, (u_char *)"ls.txt", &client_seq, &nxts_serve, 0)){ // nao tem como saber tamanho, faz tam = 0
-        printf("arquivo ls.txt transferido com sucesso!\n");
-    }
+    if(!recebe_sequencial(soquete, (u_char *)"ls.txt", &client_seq, &nxts_serve, 0)) // nao tem como saber tamanho, faz tam = 0
+        printf("response_LS: arquivo ls.txt nao pode ser transferido!\n");
+
 
     // LE TEMP FILE E MOSTRA RESULTADO NA TELA
     FILE *ls;
@@ -220,9 +220,9 @@ int response_LS(u_char *resposta, u_char *parametro)
         printf("%s", info);
         memset(info, '\0', sizeof(info));
     }
+
     // REMOVE TEMP FILE
-    char *bashrm = "rm *ls.txt";
-    system(bashrm);
+    system("rm *ls.txt");
     return true;
 }
 
