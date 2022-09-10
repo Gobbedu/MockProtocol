@@ -160,10 +160,12 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
 
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
             printf("\nrecebe_mgs() em envia_sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
+            read_packet(resposta);
             return false; // por enquanto nao corrige NACK ou ACK
         }
         if(!check_parity(resposta)){    // se paridade errada
             printf("\nrecebe_msg() em envia_sequencial recebeu mensagem com erro na paridade\n");
+            read_packet(resposta);
             return false;
         }   
         // next(this_seq);
@@ -267,17 +269,22 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
             break;
         }
 
+        // printf("MEMORIA: %s\nATUAL: %s\n", get_packet_data(memoria_recebe), get_packet_data(pacote));
+        // printf("seqMem: %d\nseqAtual: %d\n", get_packet_sequence(memoria_recebe), get_packet_sequence(pacote));
         // ENVIA PERDEU RESPOSTA DO RECEBE //
-        if(memcmp(memoria_recebe, pacote, TAM_PACOTE) == 0){
+        if(memcmp(memoria_recebe, pacote, TAM_PACOTE-1) == 0){
             printf("\nrecebe_sequencial recebeu o mesmo pacote de antes\n");
             moven(this_seq, -1);
             sprintf((char*)seq, "%d", *this_seq);
             envia_msg(socket, this_seq, memoria_envia, seq , 2); 
             continue;
-        }
+        }   
+        // SALVA RESPOSTA
+        memcpy(memoria_recebe, pacote, TAM_PACOTE);
 
         // NACK //
         sprintf((char*) seq, "%d", *other_seq);
+        memoria_envia = NACK;
         if (!check_sequence(pacote, *other_seq)){
                 // if(get_packet_sequence(pacote) == peekn(*other_seq, -1))
                 // {   // recebeu a mesma mensagem de antes, reenvia resposta
@@ -310,6 +317,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         
         // ACK // (soh e possivel retornar NACK & ACK transmitindo dados)
         next(other_seq);
+        memoria_envia = ACK;
 
         // data comeca 3 bytes depois do inicio
         len_data  = get_packet_tamanho(pacote);         // tamanho em bytes a escrever no arquivo
@@ -330,7 +338,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         sprintf((char*) seq, "%d", get_packet_sequence(pacote));
         envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
         free(pacote);
-    }
+    }   printf("\n");   
 
     fclose(dst); 
     if(try == NTENTATIVAS){

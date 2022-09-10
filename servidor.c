@@ -219,7 +219,7 @@ void get(unsigned char *buffer){
     }
  
     next(&nxts_cli);
-    read_packet(resposta);
+    // read_packet(resposta);
     // define comportamento com base na resposta do cliente
     switch (get_packet_type(resposta))
     {
