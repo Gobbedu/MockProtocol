@@ -332,6 +332,7 @@ int cliente_sinaliza(unsigned char *parametro, int tipo)
 
         case ERRO:          // resposta de (ls, cd, mkdir, put, get)
             // printf("cliente_sinaliza resposta: (%s) ; mensagem: (%s)\n", get_type_packet(resposta), data);
+            printf("ERRO: flag (%s)\n", data);
             free(resposta);
             free(data);
             return false;

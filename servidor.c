@@ -179,9 +179,10 @@ void get(unsigned char *buffer){
     FILE *arquivo;
 
     arquivo = fopen((char*)get, "r");
+    stat((char*)get, &st);                      // devolve atributos do arquivo
 
     // ERRO AO LER ARQUIVO, retorna //
-    if(!arquivo){        
+    if(!arquivo || S_ISDIR(st.st_mode) == 1){        
         switch (errno){             // errno da 11, que nao eh erro esperado
             case 2:                 // ret devolve ($?)*256 de mkdir em system(mkdir)
                 flag = arq_nn_E;
@@ -203,9 +204,8 @@ void get(unsigned char *buffer){
     }
 
     // ARQUIVO ABERTO //
-    stat((char*)get, &st);                     // devolve atributos do arquivo
-    mem = calloc(16, sizeof(char));     // 16 digitos c/ bytes cabe ate 999Tb
-    sprintf((char*)mem, "%ld", st.st_size);    // salva tamanho do arquivo em bytes
+    mem = calloc(16, sizeof(char));             // 16 digitos c/ bytes cabe ate 999Tb
+    sprintf((char*)mem, "%ld", st.st_size);     // salva tamanho do arquivo em bytes
     long tamanho_bytes = atoi((char*)mem);
 
     if(!envia_msg(soquete, &serv_seq, DESC_ARQ, mem, 16))
