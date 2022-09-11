@@ -8,7 +8,7 @@
     - [] se cliente nn conseguiu conversar com o servidor, nao incrementar o contador    
 */
 
-#define NTENTATIVAS 10 // numero de vezes que vai tentar ler/enviar um pacote
+#define NTENTATIVAS 5 // numero de vezes que vai tentar ler/enviar um pacote
 // SEQUENCIA QUE RECEBEU ACK OU NACK FICA NO CAMPO DE DADOS
 
 /* envia UM pacote com dados especificados e espera UMA resposta,
@@ -251,8 +251,8 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
     // MONTA ARQUIVO //
     try = w_all = 0;
     u_char memoria_recebe[TAM_PACOTE];  // mensagem recebida anteriormente
+    // u_char *memoria_recebe = NULL;
     int memoria_envia = ACK;               // dados mensagem enviada anteriormente
-    int porcento = -1;
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
         pacote = recebe_msg(socket);
@@ -272,7 +272,8 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         // printf("MEMORIA: %s\nATUAL: %s\n", get_packet_data(memoria_recebe), get_packet_data(pacote));
         // printf("seqMem: %d\nseqAtual: %d\n", get_packet_sequence(memoria_recebe), get_packet_sequence(pacote));
         // ENVIA PERDEU RESPOSTA DO RECEBE //
-        if(memcmp(memoria_recebe, pacote, TAM_PACOTE-1) == 0){
+        sprintf((char*) seq, "%d", *other_seq);
+        if(memcmp(memoria_recebe+1, pacote+1, TAM_PACOTE-2) == 0){
             printf("\nrecebe_sequencial recebeu o mesmo pacote de antes\n");
             moven(this_seq, -1);
             sprintf((char*)seq, "%d", *this_seq);
@@ -281,28 +282,22 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         }   
         // SALVA RESPOSTA
         memcpy(memoria_recebe, pacote, TAM_PACOTE);
+        // free(memoria_recebe);
+        // memoria_recebe = pacote;
 
         // NACK //
-        sprintf((char*) seq, "%d", *other_seq);
         memoria_envia = NACK;
         if (!check_sequence(pacote, *other_seq)){
-                // if(get_packet_sequence(pacote) == peekn(*other_seq, -1))
-                // {   // recebeu a mesma mensagem de antes, reenvia resposta
-                //     moven(this_seq, -1);
-                //     sprintf((char*) seq, "%d", peekn(*other_seq, -1));
-                //     envia_msg(socket, this_seq, ACK, seq, 2); // free(seq);
-                //     memoria_envia = ACK;
-                //     continue;
-                // }
                 // paridade diferente, dado: (sequencia esperada)
-                printf("recebe recebeu (%d) mas esperava (%d) como sequencia\n", *other_seq, get_packet_sequence(pacote));
+                printf("\nrecebe_msg em recebe_sequencial esperava sequencia (%d) mas recebeu (%d)\n", *other_seq, get_packet_sequence(pacote));
+                // read_packet(pacote);
+                // read_packet(memoria_recebe);
                 // seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); // free(seq);
                 // empty_netbuff(socket);
-                printf("ENVIOU NACK, erro de sequencia\n");
+                printf("\nENVIOU NACK, erro de sequencia\n");
                 // free(pacote);
                 continue;   // volta a ouvir
-
         }
         if(!check_parity(pacote)){
                 printf("recebe recebeu pacote com erro de paridade, NACK\n");
@@ -328,17 +323,15 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         }
         w_all += wrote;
 
-        if(total && (w_all*100/total) > porcento )
-        {
+        if(total)
             ProgressBar("Recebendo ", w_all, total);
-            porcento++;
-        }
 
         // seq = ptoa(pacote);
-        sprintf((char*) seq, "%d", get_packet_sequence(pacote));
+        // sprintf((char*) seq, "%d", get_packet_sequence(pacote));
         envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
-        free(pacote);
+        // free(pacote);
     }   printf("\n");   
+    free(pacote); // ultimo pacote
 
     fclose(dst); 
     if(try == NTENTATIVAS){
