@@ -96,7 +96,7 @@ void cdc(unsigned char* buffer){
     // unsigned char *resposta;
     unsigned char *cd, flag[1];
 
-    printf("CD ");
+    printf("CD\n");
     cd = get_packet_data(buffer);
     unsigned char *d = calloc(strcspn((char*)cd, " "), sizeof(unsigned char));    // remove espaco no final da mensagem, se tem espaco da ruim 
     char pwd[PATH_MAX];                                 // "cd ..     " -> "..    " nn existe 
@@ -140,7 +140,7 @@ void mkdirc(unsigned char* buffer){
     // unsigned char *resposta;
     unsigned char *mkdir, flag[1];
 
-    printf("MKDIR "); fflush(stdout);
+    printf("MKDIR\n"); fflush(stdout);
     mkdir = get_packet_data(buffer);
     ret = system((char*)mkdir);
 
@@ -173,7 +173,7 @@ void get(unsigned char *buffer){
     unsigned char *resposta;
     unsigned char *get, *mem, flag;
 
-    printf("GET ");
+    printf("GET\n");
     get = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
@@ -332,7 +332,7 @@ int ls(u_char *buffer){
     unsigned char *resposta;
     unsigned char *mem, flag;
 
-    printf("LS ");
+    printf("LS\n");
 
     // RECEBE COMANDO LS EM DADOS DO PACOTE
     u_char * buffer_aux = calloc(6 + strlen(" > /tmp/ls.txt"), sizeof(char));
