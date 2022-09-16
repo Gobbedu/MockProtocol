@@ -154,7 +154,7 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
         if(get_packet_sequence(resposta) == peekn(*other_seq, -1)){
             // se recebeu ack/nack mensagem anterior
             printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
-            moven(other_seq, -1);
+            moven(this_seq, -1);
             continue;
         }   enviou = true;   
         // next(this_seq);
