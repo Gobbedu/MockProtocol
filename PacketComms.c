@@ -143,40 +143,42 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
         if(!envia_msg(socket, this_seq, DADOS, data, leu_sz)){
-            printf("\ntimeo envia_msg() em envia_sequencial (DADOS)\n");
+            printf("\ntimeo envia_msg() em envia_sequencial (DADOS)\n");fflush(stdout);
             tentativas++;
             continue;
         }   
 
         resposta = recebe_msg(socket);
         if(!resposta){
-            printf("\ntimeo recebe_msg() envia_sequencial (ACK, NACK)\n");
+            printf("\ntimeo recebe_msg() envia_sequencial (ACK, NACK)\n");fflush(stdout);
             tentativas++;
             moven(this_seq, -1);
             continue;
         }   tentativas = 0;
        
         // read_packet(resposta);
+        // QUAL MENSAGEM RECEBEU ACK/NACK 
+        if(get_packet_sequence(resposta) == peekn(*other_seq, -1)){
+            // se recebeu ack/nack mensagem anterior
+            printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
+            moven(this_seq, -1);
+            enviou = true;
+            continue;
+        }   
 
-        if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
+        else if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
             printf("\nrecebe_mgs() em envia_sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
             read_packet(resposta);
             return false; // por enquanto nao corrige NACK ou ACK
         }
-        if(!check_parity(resposta)){    // se paridade errada
+        else if(!check_parity(resposta)){    // se paridade errada
             printf("\nrecebe_msg() em envia_sequencial recebeu mensagem com erro na paridade\n");
             read_packet(resposta);
             return false;
         }   
+        enviou = true;
         // next(this_seq);
 
-        // QUAL MENSAGEM RECEBEU ACK/NACK 
-        if(atoi((char*)resposta+3) == peekn(*this_seq, -2)){
-            // se recebeu ack/nack mensagem anterior
-            printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
-            moven(this_seq, -1);
-            continue;
-        }   enviou = true;
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
