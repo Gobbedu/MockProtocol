@@ -116,7 +116,6 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
     // QUEBRA ARQUIVO EM BLOCOS //
     int tentativas = 0;
     int enviou = true;
-    int porcento = -1;
     // clock_t start = clock();
     time(&start);
     while(tentativas < NTENTATIVAS){  
@@ -132,13 +131,7 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
             }
             blocks++;
             enviou = false;
-            if(total && (leu_bytes*100/total) > porcento )
-            {
-                // printf("(%ld):(%ld) ", leu_bytes, total);
-                // fflush(stdout);
-                ProgressBar("Enviando ", leu_bytes, total);
-                porcento++;
-            }
+            if(total ) ProgressBar("Enviando ", leu_bytes, total);
         }
 
         // ENVIA PACOTE NA ESPERA DE UM ACK //
