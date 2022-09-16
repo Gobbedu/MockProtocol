@@ -255,6 +255,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
     int memoria_envia = ACK;               // dados mensagem enviada anteriormente
     while(try < NTENTATIVAS){    // soh para se recebe pacote com tipo FIM
         // tenta receber pacote 
+        // if(pacote) free(pacote);    // libera pacote anterior
         pacote = recebe_msg(socket);
         if(!pacote){
             try++;
@@ -272,8 +273,8 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         // printf("MEMORIA: %s\nATUAL: %s\n", get_packet_data(memoria_recebe), get_packet_data(pacote));
         // printf("seqMem: %d\nseqAtual: %d\n", get_packet_sequence(memoria_recebe), get_packet_sequence(pacote));
         // ENVIA PERDEU RESPOSTA DO RECEBE //
-        sprintf((char*) seq, "%d", *other_seq);
-        if(memcmp(memoria_recebe+1, pacote+1, TAM_PACOTE-2) == 0){
+        if(memcmp(memoria_recebe, pacote, TAM_PACOTE) == 0){      // original
+        // if(memcmp(memoria_recebe+1, pacote+1, TAM_PACOTE-2) == 0){ // gambiarra qnd nao copia MI
             printf("\nrecebe_sequencial recebeu o mesmo pacote de antes\n");
             moven(this_seq, -1);
             sprintf((char*)seq, "%d", *this_seq);
@@ -281,11 +282,12 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
             continue;
         }   
         // SALVA RESPOSTA
-        memcpy(memoria_recebe, pacote, TAM_PACOTE);
+        // memcpy(memoria_recebe, pacote, TAM_PACOTE);
         // free(memoria_recebe);
         // memoria_recebe = pacote;
 
         // NACK //
+        sprintf((char*) seq, "%d", *other_seq);
         memoria_envia = NACK;
         if (!check_sequence(pacote, *other_seq)){
                 // paridade diferente, dado: (sequencia esperada)
@@ -312,7 +314,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         
         // ACK // (soh e possivel retornar NACK & ACK transmitindo dados)
         next(other_seq);
-        memoria_envia = ACK;
+        // memoria_envia = ACK;
 
         // data comeca 3 bytes depois do inicio
         len_data  = get_packet_tamanho(pacote);         // tamanho em bytes a escrever no arquivo
@@ -323,15 +325,14 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
         }
         w_all += wrote;
 
-        if(total)
-            ProgressBar("Recebendo ", w_all, total);
+        if(total) ProgressBar("Recebendo ", w_all, total);
 
         // seq = ptoa(pacote);
-        // sprintf((char*) seq, "%d", get_packet_sequence(pacote));
+        sprintf((char*) seq, "%d", get_packet_sequence(pacote));
         envia_msg(socket, this_seq, ACK, seq , 2); //free(seq);
-        // free(pacote);
+        free(pacote);
     }   printf("\n");   
-    free(pacote); // ultimo pacote
+    // free(pacote); // ultimo pacote
 
     fclose(dst); 
     if(try == NTENTATIVAS){
