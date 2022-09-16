@@ -106,7 +106,7 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
     unsigned char *resposta;
     long leu_bytes = 0;          // numero de bytes lidos do arquivo (deve bater com ls)
 
-    printf("envia sequencial start\n");
+    // printf("envia sequencial start\n");
     rewind(file);
 
     // LIMITE CAMPO DADOS //
@@ -154,9 +154,9 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
         if(get_packet_sequence(resposta) == peekn(*other_seq, -1)){
             // se recebeu ack/nack mensagem anterior
             printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
-            moven(this_seq, -1);
+            moven(other_seq, -1);
             enviou = true;
-            continue;
+            // continue;
         }   
 
         else if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
@@ -175,13 +175,15 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
 
         switch (get_packet_type(resposta)){
             case NACK:  // resetar fseek para enviar mesma mensagem dnv
-                // printf("caiu no NACK\n");
+                printf("caiu no NACK\n");
                 if(fseek(file, (long) (-leu_sz), SEEK_CUR) != 0){
                     perror("\nfseek == 0");
                     free(resposta);
                     return false;
                 }
-                moven(this_seq, -1);
+                read_packet(resposta);
+                moven(this_seq, -2);
+                printf("thisseq: %d | thisseq-1: %d\n", peekn(*this_seq, 1), *this_seq);
                 break;
             
             case ACK:   // continua loop normalmente
@@ -228,7 +230,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
     unsigned char *pacote;
     unsigned char seq[2];
 
-    printf("recebe sequencial start\n");
+    // printf("recebe sequencial start\n");
 
     // DESTINO //
     char *dest = calloc(6+strlen((char*)file), sizeof(char));
@@ -273,6 +275,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
             moven(this_seq, -1);
             sprintf((char*)seq, "%d", *this_seq);
             envia_msg(socket, this_seq, memoria_envia, seq , 2); 
+            moven(this_seq, -1);
             continue;
         }   
         // SALVA RESPOSTA
@@ -289,6 +292,7 @@ int recebe_sequencial(int socket,unsigned char *file, unsigned int *this_seq, un
                 // read_packet(memoria_recebe);
                 // seq = itoa(*other_seq);
                 envia_msg(socket, this_seq, NACK, seq, 2); // free(seq);
+                moven(this_seq, -1);
                 // empty_netbuff(socket);
                 printf("\nENVIOU NACK, erro de sequencia\n");
                 // free(pacote);
