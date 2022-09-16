@@ -492,7 +492,7 @@ void ProgressBar( char label[], long step, long total )
 
     int pos = ( step * width ) / total ;
     
-    int percent = ( step * 100 ) / total;
+    float percent = ( (step+0.0) * 100 ) / (total+0.0);
 
     printf( "%s["GREEN, label );
 
@@ -501,6 +501,6 @@ void ProgressBar( char label[], long step, long total )
 
     //fill progress bar with spaces
     printf(RESET"%*c", width - pos + 1, ']' );
-    printf( " %3d%%\r", percent );
+    printf( " %6.2f%%\r", percent );
     fflush(stdout);
 }
