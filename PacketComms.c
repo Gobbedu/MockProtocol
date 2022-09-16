@@ -150,6 +150,14 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
         }   tentativas = 0;
        
         // read_packet(resposta);
+        // QUAL MENSAGEM RECEBEU ACK/NACK 
+        if(get_packet_sequence(resposta) == peekn(*other_seq, -1)){
+            // se recebeu ack/nack mensagem anterior
+            printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
+            moven(other_seq, -1);
+            continue;
+        }   enviou = true;   
+        // next(this_seq);
 
         if(!check_sequence(resposta, *other_seq)){ // se sequencia errada
             printf("\nrecebe_mgs() em envia_sequencial esperava sequencia (%d) e recebeu(%d)\n", *other_seq, get_packet_sequence(resposta));
@@ -161,14 +169,7 @@ int envia_sequencial(int socket, FILE *file, u_int *this_seq, u_int *other_seq, 
             read_packet(resposta);
             return false;
         }
-        // QUAL MENSAGEM RECEBEU ACK/NACK 
-        if(atoi((char*)resposta+3) == peekn(*this_seq, -2)){
-            // se recebeu ack/nack mensagem anterior
-            printf("\nrecebe_msg() em envia_sequencial recebeu confirmacao da msg anterior\n");
-            moven(this_seq, -1);
-            continue;
-        }   enviou = true;   
-        // next(this_seq);
+        
 
 
         switch (get_packet_type(resposta)){
