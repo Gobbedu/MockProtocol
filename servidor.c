@@ -245,7 +245,7 @@ int put(unsigned char *buffer)
     unsigned char *resposta;
     unsigned char flag;
 
-    printf("PUT ");
+    printf("PUT \n");
     u_char *put = get_packet_data(buffer);  // arquivo a abrir
     // nxts_cli
     FILE *arquivo;
